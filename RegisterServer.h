@@ -63,46 +63,6 @@ public:
 };
 
 
-class GenericSensor : public Sensor {
-
-public:
-  GenericSensor() : Sensor() {
-    this->func = NULL;
-  }
-
-  GenericSensor(
-          const String& id,
-          sensor_type type,
-          int pin,
-          int range,
-          int (*func)(void)) : Sensor(id, type, pin, range) {
-    this->func = func;
-  }
-
-  GenericSensor(const GenericSensor& s) {
-      this->id = s.id;
-      this->pin = s.pin;
-      this->value = s.value;
-      this->type = s.type;
-      this->range = s.range;
-      this->func = s.func;
-    }
-
-    GenericSensor& operator=(const GenericSensor& s) {
-    this->id = s.id;
-      this->pin = s.pin;
-      this->value = s.value;
-      this->type = s.type;
-      this->range = s.range;
-      this->func = s.func;
-
-      return *(this);
-  }
-
-  int (*func)(void);
-
-};
-
 class RegisterServer {
 
 public:
@@ -118,20 +78,20 @@ public:
     this->token = token;
     this->url = serverAddress;
     this->nrSensors = 0;
-    this->nrGenerics = 0;
   }
 
-  bool registerGenericSensor(String id, int pin, int range, int (*func)(void)) {
-    if (nrGenerics == MAX_SIZE) {
+  bool registerGenericInput(String id, int pin, int range, int (*func)(float)) {
+    if (nrSensors == MAX_SIZE) {
       return false;
     }
     
-    GenericSensor s(id, GENERIC_INPUT, pin, range, func);
-    generics[nrGenerics] = s;
-    nrGenerics += 1;
+    Sensor s(id, GENERIC_INPUT, pin, range);
+    sensors[nrSensors] = s;
+    functions[nrSensors] = func;
+    nrSensors += 1;
    
     String newUrl = url + "/register";
-    String data = "id=" + id + "&token=" + token + "&type=GENERIC_SENSOR";
+    String data = "id=" + id + "&token=" + token + "&type=GENERIC_INPUT";
     
     HttpClient client;
     client.post(newUrl, data);
@@ -139,7 +99,25 @@ public:
     return true;
   }
 
+  bool registerGenericOutput(String id, int pin, int range, int (*func)(float)) {
+    if (nrSensors == MAX_SIZE) {
+      return false;
+    }
+    
+    Sensor s(id, GENERIC_OUTPUT, pin, range);
+    sensors[nrSensors] = s;
+    functions[nrSensors] = func;
+    nrSensors += 1;
+   
+    String newUrl = url + "/register";
+    String data = "id=" + id + "&token=" + token + "&type=GENERIC_OUTPUT";
+    
+    HttpClient client;
+    client.post(newUrl, data);
 
+    return true;
+  }
+  
   bool registerDigitalInput(String id, int pin, int range) {
     if (nrSensors == MAX_SIZE) {
       return false;
@@ -219,15 +197,20 @@ public:
     digitalWrite(13, HIGH);
 
     for (int i = 0; i < nrSensors; ++ i) {
-      if (sensors[i].type == DIGITAL_INPUT || sensors[i].type == ANALOG_INPUT) {
+      if (sensors[i].type == DIGITAL_INPUT ||
+          sensors[i].type == ANALOG_INPUT  || 
+          sensors[i].type == GENERIC_INPUT) {
         
         int val;
         
         if(sensors[i].type == DIGITAL_INPUT) {
           val = digitalRead(sensors[i].pin);
-        } else {
+        } else if (sensors[i].type == ANALOG_INPUT) {
           val = analogRead(sensors[i].pin);
+        } else {
+          val = functions[i](0);
         }
+        
         if (abs(sensors[i].value - val)  <= sensors[i].range) {
           /* should we keep new or old value */
           sensors[i].value = val;
@@ -242,7 +225,9 @@ public:
         
         c.post(newUrl, data);
         
-      } else if (sensors[i].type == DIGITAL_OUTPUT || sensors[i].type == PWM_OUTPUT) {
+      } else if (sensors[i].type == DIGITAL_OUTPUT || 
+                 sensors[i].type == PWM_OUTPUT     ||
+                 sensors[i].type == GENERIC_OUTPUT) {
         HttpClient c;
         
         String newUrl = url + "/get";
@@ -284,8 +269,10 @@ public:
 
         if (sensors[i].type == DIGITAL_OUTPUT) {
           digitalWrite(sensors[i].pin, value.toInt());
-        } else {
+        } else if (sensors[i].type == PWM_OUTPUT) {
           analogWrite(sensors[i].pin, value.toInt());
+        } else {
+          functions[i](value.toFloat());
         }
         
       }
@@ -300,9 +287,6 @@ public:
       Console.print(sensors[i].id + " has value: " + String(sensors[i].value) + "\n");
     }
 
-    for (int i = 0; i < nrGenerics; ++ i) {
-      Console.print(generics[i].id + " has value: " + String(generics[i].value) + "\n");
-    }
     Console.print("-------------------------\n");
 
   }
@@ -311,10 +295,9 @@ private:
   HttpClient client;
   String token;
   Sensor sensors[MAX_SIZE];
-  GenericSensor generics[MAX_SIZE];
+  int (*functions[MAX_SIZE])(float);
   String url;
   int nrSensors;
-  int nrGenerics;
 
 };
 
