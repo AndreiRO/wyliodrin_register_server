@@ -1,8 +1,14 @@
-
-#include <Bridge.h>
-#include <HttpClient.h>
+#ifdef ARDUINO_YUN
+  #include <Bridge.h>
+  #include <HttpClient.h>
+#endif
+#ifdef ARDUINO_UNO
+  #include <Ethernet.h>
+  #include <UnoHTTPClient.h>
+#endif
 
 #define MAX_SIZE 7
+
 
 
 enum sensor_type {
@@ -72,12 +78,25 @@ public:
     pinMode(13, OUTPUT);
   }
 
-  void begin(String serverAddress, String token) {
-    Bridge.begin();
-    Console.begin();
+  int begin(String serverAddress, byte hostIp[4], byte mac[4], String token) {
+    for (int i = 0; i < 4; ++ i) {
+      this->hostIp[i] = hostIp[i];
+    }
+
+    #if defined(ARDUINO_YUN)
+      Bridge.begin();
+      Console.begin();
+    #elif defined(ARDUINO_UNO)
+      //begin ethernet
+      //TODO: edit MAC!!
+      if (!Ethernet.begin(mac)) return -1;
+    #endif
+
     this->token = token;
     this->url = serverAddress;
     this->nrSensors = 0;
+
+    return 0;
   }
 
   bool registerGenericInput(String id, int pin, int range, int (*func)(float)) {
@@ -92,9 +111,24 @@ public:
    
     String newUrl = url + "/register";
     String data = "id=" + id + "&token=" + token + "&type=GENERIC_INPUT";
-    
-    HttpClient client;
-    client.post(newUrl, data);
+
+    #if defined(ARDUINO_YUN)    
+      HttpClient client;
+      client.post(newUrl, data);
+    #elif defined(ARDUINO_UNO)
+      //arduino http client
+      HttpClient client(url, hostIp);
+      FILE* res = client.postURI(
+                      "/register", 
+                      {
+                        {"id", id}, 
+                        {"token", token},
+                        {"type", "GENERIC_INPUT"}
+                      }, 
+                      "", 
+                      NULL);
+      if (file) client.closeStream(res);
+    #endif
 
     return true;
   }
@@ -112,8 +146,23 @@ public:
     String newUrl = url + "/register";
     String data = "id=" + id + "&token=" + token + "&type=GENERIC_OUTPUT";
     
-    HttpClient client;
-    client.post(newUrl, data);
+    #if defined(ARDUINO_YUN)
+      HttpClient client;
+      client.post(newUrl, data);
+    #elif defined(ARDUINO_UNO)
+      //arduino uno
+      HttpClient client(url, hostIp);
+      FILE* res = client.postURI(
+                      "/register", 
+                      {
+                        {"id", id}, 
+                        {"token", token},
+                        {"type", "GENERIC_INPUT"}
+                      }, 
+                      "", 
+                      NULL);
+      if (file) client.closeStream(res);
+    #endif
 
     return true;
   }
@@ -131,8 +180,23 @@ public:
     String newUrl = url + "/register";
     String data = "id=" + id + "&token=" + token + "&type=DIGITAL_INPUT";
     
-    HttpClient client;
-    client.post(newUrl, data);
+    #if defined(ARDUINO_YUN)
+      HttpClient client;
+      client.post(newUrl, data);
+    #elif defined(ARDUINO_UNO)
+      //do sth
+      HttpClient client(url, hostIp);
+      FILE* res = client.postURI(
+                      "/register", 
+                      {
+                        {"id", id}, 
+                        {"token", token},
+                        {"type", "GENERIC_INPUT"}
+                      }, 
+                      "", 
+                      NULL);
+      if (file) client.closeStream(res);
+    #endif
 
     return true;
   }
@@ -148,9 +212,24 @@ public:
    
     String newUrl = url + "/register";
     String data = "id=" + id + "&token=" + token + "&type=ANALOG_INPUT";
-    
-    HttpClient client;
-    client.post(newUrl, data);
+
+    #if defined(ARDUINO_YUN)
+      HttpClient client;
+      client.post(newUrl, data);
+    #elif defined(ARDUINO_UNO)
+      //do sth
+      HttpClient client(url, hostIp);
+      FILE* res = client.postURI(
+                      "/register", 
+                      {
+                        {"id", id}, 
+                        {"token", token},
+                        {"type", "GENERIC_INPUT"}
+                      }, 
+                      "", 
+                      NULL);
+      if (file) client.closeStream(res);
+    #endif
 
     return true;
   }
@@ -168,8 +247,23 @@ public:
     String newUrl = url + "/register";
     String data = "id=" + id + "&token=" + token + "&type=DIGITAL_OUTPUT";
     
-    HttpClient client;
-    client.post(newUrl, data);
+    #if defined(ARDUINO_YUN)
+      HttpClient client;
+      client.post(newUrl, data);
+    #elif defined(ARDUINO_UNO)
+      // do sth
+      HttpClient client(url, hostIp);
+      FILE* res = client.postURI(
+                      "/register", 
+                      {
+                        {"id", id}, 
+                        {"token", token},
+                        {"type", "GENERIC_INPUT"}
+                      }, 
+                      "", 
+                      NULL);
+      if (file) client.closeStream(res);
+    #endif
 
     return true;
   }
@@ -179,7 +273,6 @@ public:
       return false;
     }
 
-    
     Sensor s(id, PWM_OUTPUT, pin, 0);
     sensors[nrSensors] = s;
     nrSensors += 1;
@@ -187,8 +280,23 @@ public:
     String newUrl = url + "/register";
     String data = "id=" + id + "&token=" + token + "&type=PWM_OUTPUT";
     
-    HttpClient client;
-    client.post(newUrl, data);
+    #ifdef ARDUINO_YUN
+      HttpClient client;
+      client.post(newUrl, data);
+    #elif defined(ARDUINO_UNO)
+      //do sth
+      HttpClient client(url, hostIp);
+      FILE* res = client.postURI(
+                      "/register", 
+                      {
+                        {"id", id}, 
+                        {"token", token},
+                        {"type", "GENERIC_INPUT"}
+                      }, 
+                      "", 
+                      NULL);
+      if (file) client.closeStream(res);
+    #endif
 
     return true;
   }
@@ -212,67 +320,111 @@ public:
         }
         
         if (abs(sensors[i].value - val)  <= sensors[i].range) {
-          /* should we keep new or old value */
-          sensors[i].value = val;
+          /* should we keep new or old value */ 
           continue;
         }
-
-        HttpClient c;
         
-        String newUrl = url + "/send";
+        sensors[i].value = val;
         String data = "id=" + sensors[i].id + "&token=" + token + "&value=" + sensors[i].value;
 
-        
-        c.post(newUrl, data);
-        
+        #ifdef ARDUINO_YUN
+          HttpClient c;
+          String newUrl = url + "/send";
+
+          c.post(newUrl, data);
+        #elif defined(ARDUINO_UNO)
+          //do sth
+          HttpClient client(url, hostIp);
+          FILE* res = client.postURI(
+                      "/send", 
+                      {
+                        {"id", id}, 
+                        {"token", token},
+                        {"value", sensors[i].value}
+                      }, 
+                      "", 
+                      NULL);
+          if (file) client.closeStream(res);
+        #endif
       } else if (sensors[i].type == DIGITAL_OUTPUT || 
                  sensors[i].type == PWM_OUTPUT     ||
                  sensors[i].type == GENERIC_OUTPUT) {
-        HttpClient c;
-        
-        String newUrl = url + "/get";
-        String data = "id=" + sensors[i].id + "&token=" + token;
 
-        
-        c.post(newUrl, data);
-        
+        String data = "id=" + sensors[i].id + "&token=" + token + "&plain=true";
         String value = "";
-        int flag = 0;
-        
-        while (c.available() && flag != 9) {
-          char w = c.read();          
 
-         /* 34 is " */
-         if (w == ' ') {
-          ;
-         } if (w == 'v') {
-            flag = 1;
-          } else if (w == 'a' && flag == 1) {
-            flag = 2;  
-          } else if (w == 'l' && flag == 2) {
-            flag = 3;  
-          } else if (w == 'u' && flag == 3) {
-            flag = 4;  
-          } else if (w == 'e' && flag == 4) {
-            flag = 5; 
-          }  else if (w == 34 && flag == 5) {
-            flag = 6;  
-          } else if (w == ':' && flag == 6) {
-            flag = 7;
-          } else if ((w >= '0' && w <= '9')  && flag == 7) {
-            if (value == "") value = String(w);
-            else value += String(w);
-          } else if(w == ',' && flag == 7) {
-            break;
+        #ifdef ARDUINO_YUN
+          HttpClient c;
+          
+          String newUrl = url + "/get";
+
+          
+          c.post(newUrl, data);
+          
+          int flag = 0;
+          
+          while (c.available()/* && flag != 9*/) {
+            value += c.read();          
+
+           /* 34 is " */
+            /*
+           if (w == ' ') {
+            ;
+           } if (w == 'v') {
+              flag = 1;
+            } else if (w == 'a' && flag == 1) {
+              flag = 2;  
+            } else if (w == 'l' && flag == 2) {
+              flag = 3;  
+            } else if (w == 'u' && flag == 3) {
+              flag = 4;  
+            } else if (w == 'e' && flag == 4) {
+              flag = 5; 
+            }  else if (w == 34 && flag == 5) {
+              flag = 6;  
+            } else if (w == ':' && flag == 6) {
+              flag = 7;
+            } else if ((w >= '0' && w <= '9')  && flag == 7) {
+              if (value == "") value = String(w);
+              else value += String(w);
+            } else if(w == ',' && flag == 7) {
+              break;
+            }
+            */
           }
-        }
+        #elif defined(ARDUINO_UNO)
+          HttpClient client("get", hostIp);
+          FILE* in = client.postURI(
+                                    "get",
+                                    {
+                                      {"id", sensors[i].id},
+                                      {"token", token},
+                                    },
+                                    "",
+                                    NULL);
+          double val = -1;
+          fscanf(in, "%f", &val);
+          client.closeStream(in);
+        #endif
 
         if (sensors[i].type == DIGITAL_OUTPUT) {
-          digitalWrite(sensors[i].pin, value.toInt());
+          #if defined(ARDUINO_YUN)
+            digitalWrite(sensors[i].pin, value.toInt());
+          #elif defined(ARDUINO_UNO)
+            digitalWrite(sensors[i].pin, (int)val);
+          #endif
         } else if (sensors[i].type == PWM_OUTPUT) {
-          analogWrite(sensors[i].pin, value.toInt());
+          #if defined(ARDUINO_YUN)
+            analogWrite(sensors[i].pin, value.toInt());
+          #elif defined(ARDUINO_UNO)
+            analogWrite(sensors[i].pin, (int)val);
+          #endif
         } else {
-          functions[i](value.toFloat());
+          #if defined(ARDUINO_YUN)
+            functions[i](value.toFloat());
+          #elif defined(ARDUINO_UNO)
+            functions[i](val);
+          #endif
         }
         
       }
@@ -298,17 +450,16 @@ private:
   int (*functions[MAX_SIZE])(float);
   String url;
   int nrSensors;
+  byte hostIp[4];
 
 };
 
 RegisterServer server;
-
 void setup() {
-  server.begin("http://andreiro-server.iot.wyliodrin.com", "salut123");
-  server.registerDigitalInput("test_", 3, 0);
-  server.registerAnalogInput("analog", 0, 10);
-  server.registerDigitalOutput("out", 4);
-  server.registerPWMOutput("var", 6);
+  
+  server.begin("http://andreiro-server.iot.wyliodrin.com", {0,0,0,0}, {0, 0, 0, 0}, "salut123");
+  server.registerAnalogInput("light", 0, 10);
+  server.registerDigitalOutput("led", 4);
 }
 
 void loop() {
