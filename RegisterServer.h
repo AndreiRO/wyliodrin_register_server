@@ -1,18 +1,11 @@
-#include <ctype.h>
 #define ARDUINO_UNO_
 
 #if defined(ARDUINO_YUN_)
   #include <Bridge.h>
   #include <HttpClient.h>
 #elif defined(ARDUINO_UNO_)
-  #include <SPI.h>
-  #include <Ethernet.h>
-  #include "/home/andrei/Arduino/libraries/HTTPClient-master/UnoHTTPClient.h"
-  #include "/home/andrei/Arduino/libraries/HTTPClient-master/UnoHTTPClient.cpp"
-  //#include <UnoHTTPClient.h>
+  #include "UnoHTTPClient.h"
 #endif
-
-#define MAX_SIZE 7
 
 
 enum sensor_type {
@@ -65,7 +58,7 @@ public:
     return *(this);
   }
 
-  int value;
+  float value;
   int pin;
   int range;
   String id;
@@ -88,8 +81,6 @@ public:
       Bridge.begin();
       Console.begin();
     #elif defined(ARDUINO_UNO_)
-      //begin ethernet
-      //TODO: edit MAC!!
       delay(1000);
       Serial.begin(9600);
       if (!Ethernet.begin(mac)) {
@@ -105,7 +96,7 @@ public:
     return 0;
   }
 
-  bool registerGenericInput(String id, int pin, int range, int (*func)(float)) {
+  bool registerGenericInput(String id, int pin, int range, float (*func)(float)) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
@@ -139,7 +130,7 @@ public:
     return true;
   }
 
-  bool registerGenericOutput(String id, int pin, int range, int (*func)(float)) {
+  bool registerGenericOutput(String id, int pin, int range, float (*func)(float)) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
@@ -322,7 +313,7 @@ public:
           sensors[i].type == ANALOG_INPUT  || 
           sensors[i].type == GENERIC_INPUT) {
         
-        int val;
+        float val;
         
         if(sensors[i].type == DIGITAL_INPUT) {
           val = digitalRead(sensors[i].pin);
@@ -332,7 +323,7 @@ public:
           val = functions[i](0);
         }
         
-        if (abs(sensors[i].value - val)  <= sensors[i].range) {
+        if (fabs(sensors[i].value - val)  <= sensors[i].range) {
           /* should we keep new or old value */ 
           continue;
         }
@@ -376,10 +367,9 @@ public:
 
           while (c.available()) {
             char w = c.read();          
-            if (!isdigit(w) && w != '.') break;
             value += w;
           }
-          sensors[i].value = value.toInt();
+          sensors[i].value = value.toFloat();
         #elif defined(ARDUINO_UNO_)
           HTTPClient client(url.c_str());
           
@@ -397,7 +387,7 @@ public:
             value += w;  
           }
 
-          sensors[i].value = value.toInt();
+          sensors[i].value = value.toFloat();
           
           client.closeStream(in);
         #endif
@@ -451,30 +441,10 @@ private:
 
   String token;
   Sensor sensors[MAX_SIZE];
-  int (*functions[MAX_SIZE])(float);
+  float (*functions[MAX_SIZE])(float);
   String url;
   int nrSensors;
   byte hostIp[4];
 
 };
-
-RegisterServer server;
-
-void setup() {
-  byte mac[] = {0x90, 0xA2, 0xDA, 0x0F, 0xD2, 0x89};
-
-  server.begin("andreiro-server.iot.wyliodrin.com", mac, "salut124");
-
-  server.registerAnalogInput("light", 0, 10);
-  server.registerDigitalOutput("led", 5);
-
-}
-
-void loop() {
-  server.loop();
-  server.printStatus();
-  delay(1000);
-}
-
-
  
