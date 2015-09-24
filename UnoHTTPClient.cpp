@@ -56,19 +56,19 @@ HTTPClient::HTTPClient(const char* host, uint16_t port) :
 }
 
 FILE*
-HTTPClient::getURI(char* uri)
+HTTPClient::getURI(const char* uri)
 {
   return getURI(uri, NULL, NULL);
 }
 
 FILE*
-HTTPClient::getURI(char* uri, http_client_parameter parameters[])
+HTTPClient::getURI(const char* uri, http_client_parameter parameters[])
 {
   return getURI(uri, parameters, NULL);
 }
 
 FILE*
-HTTPClient::getURI(char* uri, http_client_parameter parameters[],
+HTTPClient::getURI(const char* uri, http_client_parameter parameters[],
     http_client_parameter headers[])
 {
   FILE* result = openClientFile();
@@ -87,18 +87,18 @@ HTTPClient::getURI(char* uri, http_client_parameter parameters[],
 }
 
 FILE*
-HTTPClient::postURI(char* uri, const char* data)
+HTTPClient::postURI(const char* uri, const char* data)
 {
   return postURI(uri, NULL, data, NULL);
 }
 FILE*
-HTTPClient::postURI(char* uri, http_client_parameter parameters[], const char* data)
+HTTPClient::postURI(const char* uri, http_client_parameter parameters[], const char* data)
 {
   return postURI(uri, parameters, data, NULL);
 }
 
 FILE*
-HTTPClient::postURI(char* uri, http_client_parameter parameters[], const char* data,
+HTTPClient::postURI(const char* uri, http_client_parameter parameters[], const char* data,
     http_client_parameter headers[])
 {
 
@@ -117,18 +117,18 @@ sendContentPayload(result, data);
 }
 
 FILE*
-HTTPClient::putURI(char* uri, char* data)
+HTTPClient::putURI(const char* uri, char* data)
 {
   return putURI(uri, NULL, data, NULL);
 }
 FILE*
-HTTPClient::putURI(char* uri, http_client_parameter parameters[], char* data)
+HTTPClient::putURI(const char* uri, http_client_parameter parameters[], char* data)
 {
   return putURI(uri, parameters, data, NULL);
 }
 
 FILE*
-HTTPClient::putURI(char* uri, http_client_parameter parameters[], char* data,
+HTTPClient::putURI(const char* uri, http_client_parameter parameters[], char* data,
     http_client_parameter headers[])
 {
   FILE* result = openClientFile();
@@ -205,7 +205,7 @@ HTTPClient::openClientFile()
 }
 
 char
-HTTPClient::sendUriAndHeaders(FILE* stream, const char* hostName, const char* requestType, char* uri,
+HTTPClient::sendUriAndHeaders(FILE* stream, const char* hostName, const char* requestType, const char* uri,
     http_client_parameter parameters[], http_client_parameter headers[])
 {
 
