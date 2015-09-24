@@ -4,7 +4,8 @@
   #include <Bridge.h>
   #include <HttpClient.h>
 #elif defined(ARDUINO_UNO_)
-  #include "UnoHTTPClient.h"
+  #include <SPI.h>
+  #include <Ethernet.h>
 #endif
 
 
@@ -58,7 +59,7 @@ public:
     return *(this);
   }
 
-  float value;
+  int value;
   int pin;
   int range;
   String id;
@@ -81,12 +82,14 @@ public:
       Bridge.begin();
       Console.begin();
     #elif defined(ARDUINO_UNO_)
+      //begin ethernet
+      //TODO: edit MAC!!
       delay(1000);
       Serial.begin(9600);
       if (!Ethernet.begin(mac)) {
-        Serial.println("Error configuring ethernet");
+        Serial.println(PSTR("Error configuring ethernet"));
       }
-      Serial.println("Configured");
+      Serial.println(PSTR("Configured"));
     #endif
 
     this->token = token;
@@ -96,7 +99,7 @@ public:
     return 0;
   }
 
-  bool registerGenericInput(String id, int pin, int range, float (*func)(float)) {
+  bool registerGenericInput(String id, int pin, int range, int (*func)(float)) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
@@ -106,8 +109,8 @@ public:
     functions[nrSensors] = func;
     nrSensors += 1;
    
-    String newUrl = url + "/register";
-    String data = "id=" + id + "&token=" + token + "&type=GENERIC_INPUT&cool=true";
+    String newUrl = url + PSTR("/register");
+    String data = PSTR("id=") + id + PSTR("&token=") + token + PSTR("&type=GENERIC_INPUT&cool=true");
 
     #if defined(ARDUINO_YUN_)    
       HttpClient client;
@@ -115,12 +118,12 @@ public:
     #elif defined(ARDUINO_UNO_)
       //arduino http client
       http_client_parameter header[] = {
-                        {"Content-Type", "application/x-www-form-urlencoded"},
+                        {PSTR("Content-Type"), PSTR("application/x-www-form-urlencoded")},
                         {NULL, NULL}
       };
       HTTPClient client(url.c_str());
       FILE* res = client.postURI(
-                      "/register",
+                      PSTR("/register"),
                       NULL,
                       data.c_str(), 
                       header);
@@ -130,7 +133,7 @@ public:
     return true;
   }
 
-  bool registerGenericOutput(String id, int pin, int range, float (*func)(float)) {
+  bool registerGenericOutput(String id, int pin, int range, int (*func)(float)) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
@@ -140,8 +143,8 @@ public:
     functions[nrSensors] = func;
     nrSensors += 1;
    
-    String newUrl = url + "/register";
-    String data = "id=" + id + "&token=" + token + "&type=GENERIC_OUTPUT&cool=true";
+    String newUrl = url + PSTR("/register");
+    String data = PSTR("id=") + id + PSTR("&token=") + token + PSTR("&type=GENERIC_OUTPUT&cool=true");
     
     #if defined(ARDUINO_YUN_)
       HttpClient client;
@@ -149,12 +152,12 @@ public:
     #elif defined(ARDUINO_UNO_)
       //arduino uno
       http_client_parameter header[] = {
-                        {"Content-Type", "application/x-www-form-urlencoded"},
+                        {PSTR("Content-Type"), PSTR("application/x-www-form-urlencoded")},
                         {NULL, NULL}
       };
       HTTPClient client(url.c_str());
       FILE* res = client.postURI(
-                      "/register", 
+                      PSTR("/register"), 
                       NULL, 
                       data.c_str(), 
                       header);
@@ -175,8 +178,8 @@ public:
     sensors[nrSensors] = s;
     nrSensors += 1;
    
-    String newUrl = url + "/register";
-    String data = "id=" + id + "&token=" + token + "&type=DIGITAL_INPUT&cool=true";
+    String newUrl = url + PSTR("/register");
+    String data = PSTR("id=") + id + PSTR("&token=") + token + PSTR("&type=DIGITAL_INPUT&cool=true");
     
     #if defined(ARDUINO_YUN_)
       HttpClient client;
@@ -184,12 +187,12 @@ public:
     #elif defined(ARDUINO_UNO_)
       //do sth
      http_client_parameter header[] = {
-                        {"Content-Type", "application/x-www-form-urlencoded"},
+                        {PSTR("Content-Type"), PSTR("application/x-www-form-urlencoded")},
                         {NULL, NULL}
       };
       HTTPClient client(url.c_str());
       FILE* res = client.postURI(
-                      "/register", 
+                      PSTR("/register"), 
                       NULL, 
                       data.c_str(), 
                       header);
@@ -208,21 +211,21 @@ public:
     sensors[nrSensors] = s;
     nrSensors += 1;
    
-    String newUrl = url + "/register";
-    String data = "id=" + id + "&token=" + token + "&type=ANALOG_INPUT&cool=true";
+    String newUrl = url + PSTR("/register");
+    String data = PSTR("id=") + id + PSTR("&token=") + token + PSTR("&type=ANALOG_INPUT&cool=true");
 
     #if defined(ARDUINO_YUN_)
       HttpClient client;
       client.post(newUrl, data);
-      Console.println("Registering aI");
+      Console.println(PSTR("Registering aI"));
     #elif defined(ARDUINO_UNO_)
       http_client_parameter header[] = {
-                        {"Content-Type", "application/x-www-form-urlencoded"},
+                        {PSTR("Content-Type"), PSTR("application/x-www-form-urlencoded")},
                         {NULL, NULL}
       };
       HTTPClient client(url.c_str());
       FILE* res = client.postURI(
-                      "/register", 
+                      PSTR("/register"), 
                       NULL, 
                       data.c_str(),
                       header);
@@ -244,22 +247,22 @@ public:
     sensors[nrSensors] = s;
     nrSensors += 1;
    
-    String newUrl = url + "/register";
-    String data = "id=" + id + "&token=" + token + "&type=DIGITAL_OUTPUT&cool=true";
+    String newUrl = url + PSTR("/register");
+    String data = PSTR("id=") + id + PSTR("&token=") + token + PSTR("&type=DIGITAL_OUTPUT&cool=true");
     
     #if defined(ARDUINO_YUN_)
       HttpClient client;
       client.post(newUrl, data);
-      Console.println("Regist do");
+      Console.println(PSTR("Regist do"));
     #elif defined(ARDUINO_UNO_)
       // do sth
       http_client_parameter header[] = {
-                        {"Content-Type", "application/x-www-form-urlencoded"},
+                        {PSTR("Content-Type"), PSTR("application/x-www-form-urlencoded")},
                         {NULL, NULL}
       };
       HTTPClient client(url.c_str());
       FILE* res = client.postURI(
-                      "/register", 
+                      PSTR("/register"), 
                       NULL,
                       data.c_str(),
                       header);
@@ -279,8 +282,8 @@ public:
     sensors[nrSensors] = s;
     nrSensors += 1;
    
-    String newUrl = url + "/register";
-    String data = "id=" + id + "&token=" + token + "&type=PWM_OUTPUT&cool=true";
+    String newUrl = url + PSTR("/register");
+    String data = PSTR("id=") + id + PSTR("&token=") + token + PSTR("&type=PWM_OUTPUT&cool=true");
     
     #if defined(ARDUINO_YUN_)
       HttpClient client;
@@ -288,12 +291,12 @@ public:
     #elif defined(ARDUINO_UNO_)
       //do sth
       http_client_parameter header[] = {
-                        {"id", "application/x-www-form-urlencoded"},
+                        {PSTR("id"), PSTR("application/x-www-form-urlencoded")},
                         {NULL, NULL}
       };
       HTTPClient client(url.c_str());
       FILE* res = client.postURI(
-                      "/register", 
+                      PSTR("/register"), 
                       NULL,
                       data.c_str(),
                       header);
@@ -313,7 +316,7 @@ public:
           sensors[i].type == ANALOG_INPUT  || 
           sensors[i].type == GENERIC_INPUT) {
         
-        float val;
+        int val;
         
         if(sensors[i].type == DIGITAL_INPUT) {
           val = digitalRead(sensors[i].pin);
@@ -323,28 +326,28 @@ public:
           val = functions[i](0);
         }
         
-        if (fabs(sensors[i].value - val)  <= sensors[i].range) {
+        if (abs(sensors[i].value - val)  <= sensors[i].range) {
           /* should we keep new or old value */ 
           continue;
         }
         
         sensors[i].value = val;
-        String data = "id=" + sensors[i].id + "&token=" + token + "&value=" + sensors[i].value + "&cool=true";
+        String data = PSTR("id=") + sensors[i].id + PSTR("&token=") + token + PSTR("&value=") + sensors[i].value + PSTR("&cool=true");
 
         #if defined(ARDUINO_YUN_)
           HttpClient c;
-          String newUrl = url + "/send";
+          String newUrl = url + PSTR("/send");
 
           c.post(newUrl, data);
         #elif defined(ARDUINO_UNO_)
           //do sth
           http_client_parameter header[] = {
-                        {"Content-Type", "application/x-www-form-urlencoded"},
+                        {PSTR("Content-Type"), PSTR("application/x-www-form-urlencoded")},
                         {NULL, NULL}
           };
           HTTPClient client(url.c_str());
           FILE* res = client.postURI(
-                      "/send", 
+                      PSTR("/send"), 
                       NULL,
                       data.c_str(),
                       header);
@@ -354,13 +357,13 @@ public:
                  sensors[i].type == PWM_OUTPUT     ||
                  sensors[i].type == GENERIC_OUTPUT) {
 
-        String data = "id=" + sensors[i].id + "&token=" + token + "&plain=1&cool=true";
-        String value = "";
+        String data = PSTR("id=") + sensors[i].id + PSTR("&token=") + token + PSTR("&plain=1&cool=true");
+        String value = PSTR("");
 
         #if defined(ARDUINO_YUN_)
           HttpClient c;
           
-          String newUrl = url + "/get";
+          String newUrl = url + PSTR("/get");
 
           
           c.post(newUrl, data);
@@ -369,16 +372,16 @@ public:
             char w = c.read();          
             value += w;
           }
-          sensors[i].value = value.toFloat();
+          sensors[i].value = value.toInt();
         #elif defined(ARDUINO_UNO_)
           HTTPClient client(url.c_str());
           
           http_client_parameter header[] = {
-                                      {"Content-Type", "application/x-www-form-urlencoded"},
+                                      {PSTR("Content-Type"), PSTR("application/x-www-form-urlencoded")},
                                       {NULL, NULL}
           };
           FILE* in = client.postURI(
-                                    "/get",
+                                    PSTR("/get"),
                                     NULL,
                                     data.c_str(),
                                     header);
@@ -387,7 +390,7 @@ public:
             value += w;  
           }
 
-          sensors[i].value = value.toFloat();
+          sensors[i].value = value.toInt();
           
           client.closeStream(in);
         #endif
@@ -419,21 +422,21 @@ public:
 
   void printStatus() {
 #if defined(ARDUINO_YUN_)
-    Console.print("-------------------------\n");
+    Console.print(PSTR("-------------------------\n"));
     Console.flush();
     for (int i = 0; i < nrSensors; ++ i) {
-      Console.print(sensors[i].id + " has value: " + String(sensors[i].value) + "\n");
+      Console.print(sensors[i].id + PSTR(" has value: ") + String(sensors[i].value) + PSTR("\n"));
     }
 
-    Console.print("-------------------------\n");
+    Console.print(PSTR("-------------------------\n"));
 #elif defined(ARDUINO_UNO_)
-    Serial.print("-------------------------\n");
+    Serial.print(PSTR("-------------------------\n"));
     Serial.flush();
     for (int i = 0; i < nrSensors; ++ i) {
-      Serial.print(sensors[i].id + " has value: " + String(sensors[i].value) + "\n");
+      Serial.print(sensors[i].id + PSTR(" has value: ") + String(sensors[i].value) + PSTR("\n"));
     }
 
-    Serial.print("-------------------------\n");
+    Serial.print(PSTR("-------------------------\n"));
 #endif
   }
 
@@ -441,10 +444,12 @@ private:
 
   String token;
   Sensor sensors[MAX_SIZE];
-  float (*functions[MAX_SIZE])(float);
+  int (*functions[MAX_SIZE])(float);
   String url;
   int nrSensors;
   byte hostIp[4];
 
 };
+
+
  

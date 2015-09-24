@@ -25,19 +25,22 @@
 #ifndef HTTPCLIENT_H_
 #define HTTPCLIENT_H_
 
+#include <inttypes.h>
+#include "EthernetClient.h"
+
 /* This struct is used to pass parameters as URI paramters and additional HTTP headers.
  * normally you pass this as a array. The last entry must have the NULL-Pointer as name.
  */
 typedef struct
 {
-  char* name;
+  const char* name;
   const char* value;
 } http_client_parameter;
 
 /*
  * The HTTP client is basically a Ethernet client with some additional functions. The functions
  * of the Ethernet client are not accessible.
- * To construct a HTTP client you have to provide the IP AND the name of the server √ê else
+ * To construct a HTTP client you have to provide the IP AND the name of the server – else
  * the virtual host management of most internet servers will fail. Sorry for the inconvenience.
  */
 class HTTPClient : private EthernetClient
@@ -57,7 +60,7 @@ public:
    * The result is a file handle or null is an error occured.
    */
   FILE*
-  getURI(char* uri);
+  getURI(const char* uri);
   /*
    * Post a GET request to the server and give additional URI parameters like ?X=Y&...
    * The URI Parameters should be given as array with {NULL,NULL} as marker for the
@@ -65,7 +68,7 @@ public:
    * The result is a file handle or null is an error occured.
    */
   FILE*
-  getURI(char* uri, http_client_parameter parameters[]);
+  getURI(const char* uri, http_client_parameter parameters[]);
   /*
    * Post a GET request to the server, give additional URI parameters ?X=Y&...
    * and give additional HTTP header parameters (e.g. for some API key).
@@ -74,7 +77,7 @@ public:
    * The result is a file handle or null is an error occured.
    */
   FILE*
-  getURI(char* uri, http_client_parameter parameters[],
+  getURI(const char* uri, http_client_parameter parameters[],
       http_client_parameter headers[]);
   FILE*
   /*
@@ -83,7 +86,7 @@ public:
    * memory since we must know how much data to send.
    * The result is a file handle or null is an error occured.
    */
-  postURI(char* uri, const char* data);
+  postURI(const char* uri, const char* data);
   /*
    * Post a POST request to the server and give additional URI parameters like ?X=Y&...
    * The URI Parameters should be given as array with {NULL,NULL} as marker for the
@@ -93,7 +96,7 @@ public:
    * The result is a file handle or null is an error occured.
    */
   FILE*
-  postURI(char* uri, http_client_parameter parameters[], const char* data);
+  postURI(const char* uri, http_client_parameter parameters[], const char* data);
   /*
    * Post a POST request to the server, give additional URI parameters ?X=Y&...
    * and give additional HTTP header parameters (e.g. for some API key).
@@ -104,7 +107,7 @@ public:
    * The result is a file handle or null is an error occured.
    */
   FILE*
-  postURI(char* uri, http_client_parameter parameters[], const char* data,
+  postURI(const char* uri, http_client_parameter parameters[], const char* data,
       http_client_parameter headers[]);
   /*
    * Post a REST PUT request to the server.
@@ -113,7 +116,7 @@ public:
    * The result is a file handle or null is an error occured.
    */
   FILE*
-  putURI(char* uri, char* data);
+  putURI(const char* uri, char* data);
   /*
    * Post a REST PUT request to the server and give additional URI parameters like ?X=Y&...
    * The URI Parameters should be given as array with {NULL,NULL} as marker for the
@@ -123,7 +126,7 @@ public:
    * The result is a file handle or null is an error occured.
    */
   FILE*
-  putURI(char* uri, http_client_parameter parameters[], char* data);
+  putURI(const char* uri, http_client_parameter parameters[], char* data);
   /*
    * Post a REST PUT request to the server, give additional URI parameters ?X=Y&...
    * and give additional HTTP header parameters (e.g. for some API key).
@@ -134,7 +137,7 @@ public:
    * The result is a file handle or null is an error occured.
    */
   FILE*
-  putURI(char* uri, http_client_parameter parameters[], char* data,
+  putURI(const char* uri, http_client_parameter parameters[], char* data,
       http_client_parameter headers[]);
 
   /*
@@ -183,7 +186,7 @@ private:
   setEncoding(FILE* stream, char encode, char encodeReserved);
   //some HTTP helpers
   char
-  sendUriAndHeaders(FILE* stream, const char* hostName, const char* requestType, char* uri,
+  sendUriAndHeaders(FILE* stream, const char* hostName, const char* requestType, const char* uri,
       http_client_parameter parameters[], http_client_parameter headers[]);
   char
   sendContentPayload(FILE* stream, const char* data);
