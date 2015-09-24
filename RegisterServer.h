@@ -59,7 +59,7 @@ public:
     return *(this);
   }
 
-  float value;
+  int value;
   int pin;
   int range;
   String id;
@@ -82,6 +82,8 @@ public:
       Bridge.begin();
       Console.begin();
     #elif defined(ARDUINO_UNO_)
+      //begin ethernet
+      //TODO: edit MAC!!
       delay(1000);
       Serial.begin(9600);
       if (!Ethernet.begin(mac)) {
@@ -97,7 +99,7 @@ public:
     return 0;
   }
 
-  bool registerGenericInput(String id, int pin, int range, float (*func)(float)) {
+  bool registerGenericInput(String id, int pin, int range, int (*func)(float)) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
@@ -131,7 +133,7 @@ public:
     return true;
   }
 
-  bool registerGenericOutput(String id, int pin, int range, float (*func)(float)) {
+  bool registerGenericOutput(String id, int pin, int range, int (*func)(float)) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
@@ -314,7 +316,7 @@ public:
           sensors[i].type == ANALOG_INPUT  || 
           sensors[i].type == GENERIC_INPUT) {
         
-        float val;
+        int val;
         
         if(sensors[i].type == DIGITAL_INPUT) {
           val = digitalRead(sensors[i].pin);
@@ -324,7 +326,7 @@ public:
           val = functions[i](0);
         }
         
-        if (fabs(sensors[i].value - val)  <= sensors[i].range) {
+        if (abs(sensors[i].value - val)  <= sensors[i].range) {
           /* should we keep new or old value */ 
           continue;
         }
@@ -370,7 +372,7 @@ public:
             char w = c.read();          
             value += w;
           }
-          sensors[i].value = value.toFloat();
+          sensors[i].value = value.toInt();
         #elif defined(ARDUINO_UNO_)
           HTTPClient client(url.c_str());
           
@@ -388,7 +390,7 @@ public:
             value += w;  
           }
 
-          sensors[i].value = value.toFloat();
+          sensors[i].value = value.toInt();
           
           client.closeStream(in);
         #endif
@@ -442,11 +444,9 @@ private:
 
   String token;
   Sensor sensors[MAX_SIZE];
-  float (*functions[MAX_SIZE])(float);
+  int (*functions[MAX_SIZE])(float);
   String url;
   int nrSensors;
   byte hostIp[4];
 
 };
-
- 
