@@ -6,24 +6,30 @@
   #include <HttpClient.h>
 #elif defined(ARDUINO_UNO_)
   #include <SPI.h>
+  #include <string.h>
   #include <Ethernet.h>
   #include <EthernetClient.h>
 #endif
 
-#define MAX_SIZE 7
-
-
-String sendRequest(const char* url, const char* path, const char* data) {
+String sendRequest(const char* host, const char* path, const char* data) {
   EthernetClient client;
 
   String value;
-  if (client.connect(url, 80)) {
-    Serial.println("Connected");
+  if (client.connect(host, 80)) {
     String line = "POST ";
-    line += url;
+    line += path;
     line += " HTTP/1.1";
+    String h = "Host: ";
+    h += host;
+    Serial.println("Connected");
+    String length = "Content-Length: ";
+    length += strlen(data);
+
     client.println(line);
     client.println("Content-Type: application/x-www-form-urlencoded");
+    client.println(length);
+    client.println("Connection: close");
+    client.println(h);
     client.println();
     client.println(data);
     client.println();
@@ -38,7 +44,6 @@ String sendRequest(const char* url, const char* path, const char* data) {
         if (mode) value += current;
         
         if (current == old && current == '\n') mode = true;
-        Serial.print(current);
       }
     }
 
@@ -47,6 +52,7 @@ String sendRequest(const char* url, const char* path, const char* data) {
   } else {
     Serial.println("Failed connecting");
   }
+  Serial.println("Got: " + value);
 
   return value;
 }
@@ -102,7 +108,7 @@ public:
     return *(this);
   }
 
-  int value;
+  float value;
   int pin;
   int range;
   String id;
@@ -142,7 +148,7 @@ public:
     return 0;
   }
 
-  bool registerGenericInput(String id, int pin, int range, int (*func)(float)) {
+  bool registerGenericInput(String id, int pin, int range, float (*func)(float)) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
@@ -153,7 +159,7 @@ public:
     nrSensors += 1;
    
     String newUrl = url + "/register";
-    String data = "id=" + id + "&token=" + token + "&type=GENERIC_INPUT&cool=true";
+    String data = "id=" + id + "&token=" + token + "&type=GENERIC_INPUT";
 
     #if defined(ARDUINO_YUN_)    
       HttpClient client;
@@ -166,7 +172,7 @@ public:
     return true;
   }
 
-  bool registerGenericOutput(String id, int pin, int range, int (*func)(float)) {
+  bool registerGenericOutput(String id, int pin, int range, float (*func)(float)) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
@@ -177,7 +183,7 @@ public:
     nrSensors += 1;
    
     String newUrl = url + "/register";
-    String data = "id=" + id + "&token=" + token + "&type=GENERIC_OUTPUT&cool=true";
+    String data = "id=" + id + "&token=" + token + "&type=GENERIC_OUTPUT";
     
     #if defined(ARDUINO_YUN_)
       HttpClient client;
@@ -201,7 +207,7 @@ public:
     nrSensors += 1;
    
     String newUrl = url + "/register";
-    String data = "id=" + id + "&token=" + token + "&type=DIGITAL_INPUT&cool=true";
+    String data = "id=" + id + "&token=" + token + "&type=DIGITAL_INPUT";
     
     #if defined(ARDUINO_YUN_)
       HttpClient client;
@@ -223,7 +229,7 @@ public:
     nrSensors += 1;
    
     String newUrl = url + "/register";
-    String data = "id=" + id + "&token=" + token + "&type=ANALOG_INPUT&cool=true";
+    String data = "id=" + id + "&token=" + token + "&type=ANALOG_INPUT";
 
     #if defined(ARDUINO_YUN_)
       HttpClient client;
@@ -247,7 +253,7 @@ public:
     nrSensors += 1;
    
     String newUrl = url + "/register";
-    String data = "id=" + id + "&token=" + token + "&type=DIGITAL_OUTPUT&cool=true";
+    String data = "id=" + id + "&token=" + token + "&type=DIGITAL_OUTPUT";
     
     #if defined(ARDUINO_YUN_)
       HttpClient client;
@@ -271,7 +277,7 @@ public:
     nrSensors += 1;
    
     String newUrl = url + "/register";
-    String data = "id=" + id + "&token=" + token + "&type=PWM_OUTPUT&cool=true";
+    String data = "id=" + id + "&token=" + token + "&type=PWM_OUTPUT";
     
     #if defined(ARDUINO_YUN_)
       HttpClient client;
@@ -309,7 +315,7 @@ public:
         }
         
         sensors[i].value = val;
-        String data = "id=" + sensors[i].id + "&token=" + token + "&value=" + sensors[i].value + "&cool=true";
+        String data = "id=" + sensors[i].id + "&token=" + token + "&value=" + sensors[i].value;
 
         #if defined(ARDUINO_YUN_)
           HttpClient c;
@@ -323,7 +329,7 @@ public:
                  sensors[i].type == PWM_OUTPUT     ||
                  sensors[i].type == GENERIC_OUTPUT) {
 
-        String data = "id=" + sensors[i].id + "&token=" + token + "&plain=1&cool=true";
+        String data = "id=" + sensors[i].id + "&token=" + token + "&plain=1";
         String value = "";
 
         #if defined(ARDUINO_YUN_)
@@ -339,29 +345,18 @@ public:
             if (!isdigit(w) && w != '.') break;
             value += w;
           }
-          sensors[i].value = value.toInt();
+          sensors[i].value = value.toFloat();
         #elif defined(ARDUINO_UNO_)
           value = sendRequest(url.c_str(), "/get", data.c_str());
+          sensors[i].value = value.toFloat();
         #endif
 
         if (sensors[i].type == DIGITAL_OUTPUT) {
-          #if defined(ARDUINO_YUN_)
             digitalWrite(sensors[i].pin, value.toInt());
-          #elif defined(ARDUINO_UNO_)
-            digitalWrite(sensors[i].pin, value.toInt());
-          #endif
         } else if (sensors[i].type == PWM_OUTPUT) {
-          #if defined(ARDUINO_YUN_)
             analogWrite(sensors[i].pin, value.toInt());
-          #elif defined(ARDUINO_UNO_)
-            analogWrite(sensors[i].pin, value.toInt());
-          #endif
         } else {
-          #if defined(ARDUINO_YUN_)
             functions[i](value.toFloat());
-          #elif defined(ARDUINO_UNO_)
-            functions[i](value.toFloat());
-          #endif
         }
         
       }
@@ -393,7 +388,7 @@ private:
 
   String token;
   Sensor sensors[MAX_SIZE];
-  int (*functions[MAX_SIZE])(float);
+  float (*functions[MAX_SIZE])(float);
   String url;
   int nrSensors;
   byte hostIp[4];
