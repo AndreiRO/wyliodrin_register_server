@@ -7,12 +7,50 @@
 #elif defined(ARDUINO_UNO_)
   #include <SPI.h>
   #include <Ethernet.h>
-  #include "/home/andrei/Arduino/libraries/HTTPClient-master/UnoHTTPClient.h"
-  #include "/home/andrei/Arduino/libraries/HTTPClient-master/UnoHTTPClient.cpp"
-  //#include <UnoHTTPClient.h>
+  #include <EthernetClient.h>
+  #include "/home/andrei/Development/registration-server/UnoHTTPClient.h"
 #endif
 
 #define MAX_SIZE 7
+
+
+String sendRequest(const char* url, const char* path, const char* data) {
+  EthernetClient client;
+
+  String value;
+  if (client.connect(url, 80)) {
+    Serial.println("Connected");
+    String line = "POST ";
+    line += url;
+    line += " HTTP/1.1";
+    client.println(line);
+    client.println("Content-Type: application/x-www-form-urlencoded");
+    client.println();
+    client.println(data);
+    client.println();
+
+    char old = '\0', current = '\0';
+    bool mode = false;
+
+    while (client.connected()) {
+      if (client.available()) {
+        if (current != '\r') old = current;
+        current = client.read();
+        if (mode) value += current;
+        
+        if (current == old && current == '\n') mode = true;
+        Serial.print(current);
+      }
+    }
+
+    client.stop();
+    
+  } else {
+    Serial.println("Failed connecting");
+  }
+
+  return value;
+}
 
 
 enum sensor_type {
@@ -123,17 +161,7 @@ public:
       client.post(newUrl, data);
     #elif defined(ARDUINO_UNO_)
       //arduino http client
-      http_client_parameter header[] = {
-                        {"Content-Type", "application/x-www-form-urlencoded"},
-                        {NULL, NULL}
-      };
-      HTTPClient client(url.c_str());
-      FILE* res = client.postURI(
-                      "/register",
-                      NULL,
-                      data.c_str(), 
-                      header);
-      if (res) client.closeStream(res);
+      sendRequest(url.c_str(), "/register", data.c_str());
     #endif
  
     return true;
@@ -156,18 +184,7 @@ public:
       HttpClient client;
       client.post(newUrl, data);
     #elif defined(ARDUINO_UNO_)
-      //arduino uno
-      http_client_parameter header[] = {
-                        {"Content-Type", "application/x-www-form-urlencoded"},
-                        {NULL, NULL}
-      };
-      HTTPClient client(url.c_str());
-      FILE* res = client.postURI(
-                      "/register", 
-                      NULL, 
-                      data.c_str(), 
-                      header);
-      if (res) client.closeStream(res);
+      sendRequest(url.c_str(), "/register", data.c_str());
     #endif
     func(0);
 
@@ -191,18 +208,7 @@ public:
       HttpClient client;
       client.post(newUrl, data);
     #elif defined(ARDUINO_UNO_)
-      //do sth
-     http_client_parameter header[] = {
-                        {"Content-Type", "application/x-www-form-urlencoded"},
-                        {NULL, NULL}
-      };
-      HTTPClient client(url.c_str());
-      FILE* res = client.postURI(
-                      "/register", 
-                      NULL, 
-                      data.c_str(), 
-                      header);
-      if (res) client.closeStream(res);
+      sendRequest(url.c_str(), "/register", data.c_str());
     #endif
 
     return true;
@@ -225,19 +231,7 @@ public:
       client.post(newUrl, data);
       Console.println("Registering aI");
     #elif defined(ARDUINO_UNO_)
-      http_client_parameter header[] = {
-                        {"Content-Type", "application/x-www-form-urlencoded"},
-                        {NULL, NULL}
-      };
-      HTTPClient client(url.c_str());
-      FILE* res = client.postURI(
-                      "/register", 
-                      NULL, 
-                      data.c_str(),
-                      header);
-                     
-
-      if (res) client.closeStream(res);
+      sendRequest(url.c_str(), "/register", data.c_str());
     #endif
 
     return true;
@@ -261,18 +255,7 @@ public:
       client.post(newUrl, data);
       Console.println("Regist do");
     #elif defined(ARDUINO_UNO_)
-      // do sth
-      http_client_parameter header[] = {
-                        {"Content-Type", "application/x-www-form-urlencoded"},
-                        {NULL, NULL}
-      };
-      HTTPClient client(url.c_str());
-      FILE* res = client.postURI(
-                      "/register", 
-                      NULL,
-                      data.c_str(),
-                      header);
-      if (res) client.closeStream(res);
+      sendRequest(url.c_str(), "/register", data.c_str());
     #endif
     digitalWrite(pin, 0);
 
@@ -295,18 +278,7 @@ public:
       HttpClient client;
       client.post(newUrl, data);
     #elif defined(ARDUINO_UNO_)
-      //do sth
-      http_client_parameter header[] = {
-                        {"id", "application/x-www-form-urlencoded"},
-                        {NULL, NULL}
-      };
-      HTTPClient client(url.c_str());
-      FILE* res = client.postURI(
-                      "/register", 
-                      NULL,
-                      data.c_str(),
-                      header);
-      if (res) client.closeStream(res);
+      sendRequest(url.c_str(), "/register", data.c_str());
     #endif
     analogWrite(pin, 0);
     
@@ -346,18 +318,7 @@ public:
 
           c.post(newUrl, data);
         #elif defined(ARDUINO_UNO_)
-          //do sth
-          http_client_parameter header[] = {
-                        {"Content-Type", "application/x-www-form-urlencoded"},
-                        {NULL, NULL}
-          };
-          HTTPClient client(url.c_str());
-          FILE* res = client.postURI(
-                      "/send", 
-                      NULL,
-                      data.c_str(),
-                      header);
-          if (res) client.closeStream(res);
+          sendRequest(url.c_str(), "/send", data.c_str());
         #endif
       } else if (sensors[i].type == DIGITAL_OUTPUT || 
                  sensors[i].type == PWM_OUTPUT     ||
@@ -381,25 +342,7 @@ public:
           }
           sensors[i].value = value.toInt();
         #elif defined(ARDUINO_UNO_)
-          HTTPClient client(url.c_str());
-          
-          http_client_parameter header[] = {
-                                      {"Content-Type", "application/x-www-form-urlencoded"},
-                                      {NULL, NULL}
-          };
-          FILE* in = client.postURI(
-                                    "/get",
-                                    NULL,
-                                    data.c_str(),
-                                    header);
-          char w;
-          while ((w = fgetc(in)) != EOF) {
-            value += w;  
-          }
-
-          sensors[i].value = value.toInt();
-          
-          client.closeStream(in);
+          value = sendRequest(url.c_str(), "/get", data.c_str());
         #endif
 
         if (sensors[i].type == DIGITAL_OUTPUT) {
@@ -462,8 +405,13 @@ RegisterServer server;
 
 void setup() {
   byte mac[] = {0x90, 0xA2, 0xDA, 0x0F, 0xD2, 0x89};
+  Serial.begin(9600);
+  if (!Ethernet.begin(mac)) {
+    Serial.println("Error configuring ethernet");
+  }
+  Serial.println("Configured");
 
-  server.begin("andreiro-server.iot.wyliodrin.com", mac, "salut124");
+  server.begin("www.google.com", mac, "salut124");
 
   server.registerAnalogInput("light", 0, 10);
   server.registerDigitalOutput("led", 5);
@@ -473,8 +421,6 @@ void setup() {
 void loop() {
   server.loop();
   server.printStatus();
+
   delay(1000);
 }
-
-
- 
