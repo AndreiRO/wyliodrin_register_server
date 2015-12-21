@@ -1,6 +1,8 @@
 #include <ctype.h>
 #define ARDUINO_UNO_
 
+/* select what to import */
+
 #if defined(ARDUINO_YUN_)
   #include <Bridge.h>
   #include <HttpClient.h>
@@ -11,11 +13,21 @@
   #include <EthernetClient.h>
 #endif
 
+/**
+ * Function that sends a request and reads the result
+ * @param  host the url for the IoT server
+ * @param  path the endpoint eg /register, /send, /get
+ * @param  data the body of the request
+ * @return      String containing the result
+ */
 String sendRequest(const char* host, const char* path, const char* data) {
   EthernetClient client;
 
+  /* connect and send request */
   String value;
   if (client.connect(host, 80)) {
+
+    /* send headers */
     String line = "POST ";
     line += path;
     line += " HTTP/1.1";
@@ -37,6 +49,7 @@ String sendRequest(const char* host, const char* path, const char* data) {
     char old = '\0', current = '\0';
     bool mode = false;
 
+    /* read result */
     while (client.connected()) {
       if (client.available()) {
         if (current != '\r') old = current;
@@ -47,8 +60,7 @@ String sendRequest(const char* host, const char* path, const char* data) {
       }
     }
 
-    client.stop();
-    
+    client.stop();    
   } else {
     Serial.println("Failed connecting");
   }
@@ -57,7 +69,7 @@ String sendRequest(const char* host, const char* path, const char* data) {
   return value;
 }
 
-
+/* current sensor types */
 enum sensor_type {
   DIGITAL_INPUT,
   DIGITAL_OUTPUT,
@@ -68,11 +80,19 @@ enum sensor_type {
   UNDEFINED
 };
 
-
+/**
+ * Sensor implementation. Contains reference to the sensor:
+ * : name
+ * : physical pin
+ * : current value
+ * : sensor type
+ * : sensor range
+ */
 class Sensor {
 
 public:
 
+  /* default constructor, not to be used */
   Sensor() {
     this->id = String("invalid");
     this->pin = -1;
@@ -81,7 +101,13 @@ public:
     this->range = 0;
   }
   
-
+  /**
+   * Constructor
+   * id -> sensor name
+   * type -> the sensor's type
+   * pin -> physical pin
+   * range -> the value range
+   */
   Sensor(const String& id, sensor_type type, int pin, int range) {
     this->id = id;
     this->pin = pin;
@@ -90,6 +116,7 @@ public:
     this->range = range;
   }
 
+  /* copy constructor */
   Sensor(const Sensor& s) {
     this->id = s.id;
     this->pin = s.pin;
@@ -98,6 +125,7 @@ public:
     this->range = s.range;
   }
 
+  /* overriding = operator */
   Sensor& operator=(const Sensor& s) {
     this->id = s.id;
     this->pin = s.pin;
@@ -108,38 +136,52 @@ public:
     return *(this);
   }
 
-  float value;
-  int pin;
-  int range;
-  String id;
-  sensor_type type;
+  float value;      /* current value */
+  int pin;          /* physical pin */
+  int range;        /* value range */
+  String id;        /* sensor name */
+  sensor_type type; /* sensor type */
 };
 
-
+/**
+ * RegisterServer class. Registers each sensor and handles them.
+ *
+ * It contains a setup function and a loop function to be used
+ * Arduino-like style. Also led 13 is used to notify current state.
+ * When it is ON, it means the board is communicating with the server.
+ * 
+ */
 class RegisterServer {
 
 public:
 
+  /* constructor */
   RegisterServer() {
     nrSensors = 0;
     pinMode(13, OUTPUT);
   }
 
+  /** Initial setup
+   * serverAddres -> IoT server url
+   * mac          -> 4 bytes representing the MAC address
+   * token        -> security token
+   */
   int begin(String serverAddress, byte mac[4], String token) {
 
     #if defined(ARDUINO_YUN_)
       Bridge.begin();
       Console.begin();
     #elif defined(ARDUINO_UNO_)
-      //begin ethernet
-      //TODO: edit MAC!!
+      /* begin ethernet */
       delay(1000);
       Serial.begin(9600);
+
       if (!Ethernet.begin(mac)) {
         Serial.println("Error configuring ethernet");
       }
       Serial.println("Configured");
     #endif
+
 
     this->token = token;
     this->url = serverAddress;
@@ -148,11 +190,22 @@ public:
     return 0;
   }
 
-  bool registerGenericInput(String id, int pin, int range, float (*func)(float)) {
+  /**
+   * Registers a Generic input
+   * id     -> the name of the sensor
+   * pin    -> the physical pin
+   * range  -> the values' range before sending a new request
+   * func   -> pointer to a function
+   */
+  bool registerGenericInput(String id,
+                            int pin,
+                            int range,
+                            float (*func)(float)) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
     
+    /* create sensor and add it */
     Sensor s(id, GENERIC_INPUT, pin, range);
     sensors[nrSensors] = s;
     functions[nrSensors] = func;
@@ -161,6 +214,7 @@ public:
     String newUrl = url + "/register";
     String data = "id=" + id + "&token=" + token + "&type=GENERIC_INPUT";
 
+    /* send request to server */
     #if defined(ARDUINO_YUN_)    
       HttpClient client;
       client.post(newUrl, data);
@@ -172,11 +226,22 @@ public:
     return true;
   }
 
-  bool registerGenericOutput(String id, int pin, int range, float (*func)(float)) {
+  /**
+   * Registers a Generic output
+   * id     -> the name of the sensor
+   * pin    -> the physical pin
+   * range  -> the values' range before sending a new request
+   * func   -> pointer to a function
+   */
+  bool registerGenericOutput(String id,
+                             int pin,
+                             int range,
+                             float (*func)(float)) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
     
+    /* create sensor and add it */
     Sensor s(id, GENERIC_OUTPUT, pin, range);
     sensors[nrSensors] = s;
     functions[nrSensors] = func;
@@ -185,6 +250,7 @@ public:
     String newUrl = url + "/register";
     String data = "id=" + id + "&token=" + token + "&type=GENERIC_OUTPUT";
     
+    /* send request to server */
     #if defined(ARDUINO_YUN_)
       HttpClient client;
       client.post(newUrl, data);
@@ -196,12 +262,21 @@ public:
     return true;
   }
   
+    /**
+   * Registers a Digital input
+   * id     -> the name of the sensor
+   * pin    -> the physical pin
+   * range  -> the values' range before sending a new request
+   */
   bool registerDigitalInput(String id, int pin, int range) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
+
+    /* set the board for it */
     pinMode(pin, INPUT);
-    
+   
+    /* create it */ 
     Sensor s(id, DIGITAL_INPUT, pin, range);
     sensors[nrSensors] = s;
     nrSensors += 1;
@@ -209,6 +284,7 @@ public:
     String newUrl = url + "/register";
     String data = "id=" + id + "&token=" + token + "&type=DIGITAL_INPUT";
     
+    /* send request to server */
     #if defined(ARDUINO_YUN_)
       HttpClient client;
       client.post(newUrl, data);
@@ -219,11 +295,18 @@ public:
     return true;
   }
 
+    /**
+   * Registers a Analog input
+   * id     -> the name of the sensor
+   * pin    -> the physical pin
+   * range  -> the values' range before sending a new request
+   */
   bool registerAnalogInput(String id, int pin, int range) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
     
+    /* create it and add it */
     Sensor s(id, ANALOG_INPUT, pin, range);
     sensors[nrSensors] = s;
     nrSensors += 1;
@@ -231,6 +314,7 @@ public:
     String newUrl = url + "/register";
     String data = "id=" + id + "&token=" + token + "&type=ANALOG_INPUT";
 
+    /* send request to server */
     #if defined(ARDUINO_YUN_)
       HttpClient client;
       client.post(newUrl, data);
@@ -242,12 +326,19 @@ public:
     return true;
   }
 
+  /**
+   * Registers a Digital output
+   * id     -> the name of the sensor
+   * pin    -> the physical pin
+   * range  -> the values' range before sending a new request
+   */
   bool registerDigitalOutput(String id, int pin) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
     pinMode(pin, OUTPUT);
     
+    /* create and add it */
     Sensor s(id, DIGITAL_OUTPUT, pin, 0);
     sensors[nrSensors] = s;
     nrSensors += 1;
@@ -255,6 +346,7 @@ public:
     String newUrl = url + "/register";
     String data = "id=" + id + "&token=" + token + "&type=DIGITAL_OUTPUT";
     
+    /* send request to server */
     #if defined(ARDUINO_YUN_)
       HttpClient client;
       client.post(newUrl, data);
@@ -267,11 +359,18 @@ public:
     return true;
   }
 
+   /**
+   * Registers a PWM output
+   * id     -> the name of the sensor
+   * pin    -> the physical pin
+   * range  -> the values' range before sending a new request
+   */
   bool registerPWMOutput(String id, int pin) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
 
+    /* create sensor and add it */
     Sensor s(id, PWM_OUTPUT, pin, 0);
     sensors[nrSensors] = s;
     nrSensors += 1;
@@ -279,6 +378,7 @@ public:
     String newUrl = url + "/register";
     String data = "id=" + id + "&token=" + token + "&type=PWM_OUTPUT";
     
+    /* send request to server */
     #if defined(ARDUINO_YUN_)
       HttpClient client;
       client.post(newUrl, data);
@@ -291,9 +391,12 @@ public:
     return true;
   }
 
+  /* main loop */
   void loop() {
+    /* communicating with the server */
     digitalWrite(13, HIGH);
 
+    /* iterate over sensors and update them */
     for (int i = 0; i < nrSensors; ++ i) {
       if (sensors[i].type == DIGITAL_INPUT ||
           sensors[i].type == ANALOG_INPUT  || 
@@ -301,6 +404,7 @@ public:
         
         int val;
         
+        /* retrieve value */
         if(sensors[i].type == DIGITAL_INPUT) {
           val = digitalRead(sensors[i].pin);
         } else if (sensors[i].type == ANALOG_INPUT) {
@@ -310,13 +414,20 @@ public:
         }
         
         if (abs(sensors[i].value - val)  <= sensors[i].range) {
-          /* should we keep new or old value */ 
+          /* new value is within range */ 
           continue;
         }
         
+        /* prepare request for server */
         sensors[i].value = val;
-        String data = "id=" + sensors[i].id + "&token=" + token + "&value=" + sensors[i].value;
+        String data = "id=" +
+                      sensors[i].id +
+                      "&token=" +
+                      token +
+                      "&value=" +
+                      sensors[i].value;
 
+        /* send request */
         #if defined(ARDUINO_YUN_)
           HttpClient c;
           String newUrl = url + "/send";
@@ -329,28 +440,33 @@ public:
                  sensors[i].type == PWM_OUTPUT     ||
                  sensors[i].type == GENERIC_OUTPUT) {
 
+        /* prepare retrieval request */
         String data = "id=" + sensors[i].id + "&token=" + token + "&plain=1";
         String value = "";
 
+        /* send request */
         #if defined(ARDUINO_YUN_)
           HttpClient c;
           
-          String newUrl = url + "/get";
-
-          
+          String newUrl = url + "/get";   
           c.post(newUrl, data);
 
+          /* read response */
           while (c.available()) {
             char w = c.read();          
             if (!isdigit(w) && w != '.') break;
             value += w;
           }
+
           sensors[i].value = value.toFloat();
+
         #elif defined(ARDUINO_UNO_)
+          /* send and retrieve response */
           value = sendRequest(url.c_str(), "/get", data.c_str());
           sensors[i].value = value.toFloat();
         #endif
 
+        /* set the sensor's value */
         if (sensors[i].type == DIGITAL_OUTPUT) {
             digitalWrite(sensors[i].pin, value.toInt());
         } else if (sensors[i].type == PWM_OUTPUT) {
@@ -361,36 +477,39 @@ public:
         
       }
     }
+    /* no more communicating with the server */
     digitalWrite(13, LOW);
   }
 
+  /* used for debug only */
   void printStatus() {
-#if defined(ARDUINO_YUN_)
-    Console.print("-------------------------\n");
-    Console.flush();
-    for (int i = 0; i < nrSensors; ++ i) {
-      Console.print(sensors[i].id + " has value: " + String(sensors[i].value) + "\n");
-    }
+    #if defined(ARDUINO_YUN_)
+      Console.print("-------------------------\n");
+      Console.flush();
+      for (int i = 0; i < nrSensors; ++ i) {
+        Console.print(sensors[i].id +
+                      " has value: " +
+                      String(sensors[i].value) +
+                      "\n");
+      }
 
-    Console.print("-------------------------\n");
-#elif defined(ARDUINO_UNO_)
-    Serial.print("-------------------------\n");
-    Serial.flush();
-    for (int i = 0; i < nrSensors; ++ i) {
-      Serial.print(sensors[i].id + " has value: " + String(sensors[i].value) + "\n");
-    }
+      Console.print("-------------------------\n");
+    #elif defined(ARDUINO_UNO_)
+      Serial.print("-------------------------\n");
+      Serial.flush();
+      for (int i = 0; i < nrSensors; ++ i) {
+        Serial.print(sensors[i].id + " has value: " + String(sensors[i].value) + "\n");
+      }
 
-    Serial.print("-------------------------\n");
-#endif
+      Serial.print("-------------------------\n");
+    #endif
   }
 
 private:
 
-  String token;
-  Sensor sensors[MAX_SIZE];
-  float (*functions[MAX_SIZE])(float);
-  String url;
-  int nrSensors;
-  byte hostIp[4];
-
+  String token;                         /* security token */
+  Sensor sensors[MAX_SIZE];             /* array of sensors */
+  float (*functions[MAX_SIZE])(float);  /* array of generic functions */
+  String url;                           /* url of IoT server */
+  int nrSensors;                        /* current number of sensors */
 };

@@ -1,0 +1,18 @@
+Registration Server
+
+Author Andrei Ștefănescu
+Wyliodrin SRL
+
+Project is to be used by Wyliodrin SRL within their architecture.
+This project enables the user to quickly create IoT projects just
+by selecting the type of wanted sensors and uploading the generated
+code to the respective board. The values can be seen and modified for
+each sensor. Also, the user can define rules using Google Blockly, rules
+applied at each new sensor value changed.
+
+The project is compatible with all Wyliodrin supported boards + Arduino Uno
+and Arduino Yun.
+
+Possible "upgrades":
+
+-Remove threads in Python implementation.
