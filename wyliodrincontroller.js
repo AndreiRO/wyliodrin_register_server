@@ -1,7 +1,8 @@
 /*
-Author: Andrei Ștefănescu
-Wyliodrin SRL
-File has some content taken from defaultly generated wyliodrincontroller.js
+  Author: Andrei Ștefănescu
+  Wyliodrin SRL
+  File has some content taken from
+  defaultly generated wyliodrincontroller.js
  */
 
 angular.module('myApp',['ui.ace']).controller ('WyliodrinCtrl', function ($scope, $http)
@@ -21,8 +22,12 @@ angular.module('myApp',['ui.ace']).controller ('WyliodrinCtrl', function ($scope
             data.value[sensor].val = $scope.sensors[sensor].val;
 
             /* forced means the value was set but hasn't received confirmation */
+            /* so it will hold current value for forced_timeout time or until */
+            /* the new value equals the current one */
+            /* otherwise it will get the server's value */
             if ($scope.sensors[sensor].forced) {
               if ($scope.sensors[sensor].val === data.value[sensor].value) {
+                /* recieved set value */
                 data.value[sensor].forced = false;
                 clearTimeout($scope.sensors[sensor].forced_timeout);
               } else {
@@ -38,6 +43,7 @@ angular.module('myApp',['ui.ace']).controller ('WyliodrinCtrl', function ($scope
         $scope.sensors = data.value;
 
       } else {
+        /* only for debugging */
         console.log("!!! Forgot me" + data.variable);
         $scope[data.variable] = data.value;
       }
@@ -78,7 +84,7 @@ angular.module('myApp',['ui.ace']).controller ('WyliodrinCtrl', function ($scope
                                                           console.log($scope.sensors[key].val + " " + $scope.sensors[key].value)
                                                         }
                                                         $scope.sensors[key].forced = false; 
-                                                        console.log("timeout");
+                                                        console.log("timeouted from forced");
                                                       },
                                             4000);
                                             
@@ -120,11 +126,13 @@ angular.module('myApp',['ui.ace']).controller ('WyliodrinCtrl', function ($scope
       var currentServo = 0;
 
       if ($scope.boardType === "ARDUINO_UNO") {
+        /* add headers */
         code += "#include <SPI.h>\n#include <Ethernet.h>\n" + 
                 "#include <EthernetClient.h>\n#include <intttypes.h>\n" +
                 "#define ARDUINO_UNO_\n#include <RegisterServer.h>\n";
         
         if (hasServo()) {
+          /* add Servo header and generate separate Servo function */
           code += "#include <Servo.h>\n";
           for (var s in $scope.codeSensors) {
             if ($scope.codeSensors[s].sensorType !== "SERVOMOTOR") continue;
@@ -138,8 +146,10 @@ angular.module('myApp',['ui.ace']).controller ('WyliodrinCtrl', function ($scope
         
         code += "RegisterServer server;\n\n";
       } else if ($scope.boardType === "ARDUINO_YUN") {
+        /* add headers */
         code += "#define ARDUINO_YUN_\n#include <RegisterServer.h>\n";
         if (hasServo()) {
+          /* add Servo header and generate separate Servo function */
           code += "#include <Servo.h>\n";
           for (var s in $scope.codeSensors) {
             if ($scope.codeSensors[s].sensorType !== "SERVOMOTOR") continue;
@@ -152,9 +162,11 @@ angular.module('myApp',['ui.ace']).controller ('WyliodrinCtrl', function ($scope
         }
         code += "RegisterServer server;\n\n";
       } else if ($scope.boardType === "OTHERS") {
+        /* add imports */
         code = "from register_server import RegisterServer\n";
         
         if (hasServo()) {
+          /* import servo and generate separate functions*/
           code += "from pyupm_servo import ES08A as Servo\n";
           for (var s in $scope.codeSensors) {
             if ($scope.codeSensors[s].sensorType !== "SERVOMOTOR") continue;
@@ -167,16 +179,22 @@ angular.module('myApp',['ui.ace']).controller ('WyliodrinCtrl', function ($scope
         }
         code += "server = RegisterServer()\n";
       } else {
+        /* for debugging */
         alert("invalid context");
       }
 
       var currentServo = 0;
       if ($scope.boardType === "ARDUINO_UNO" || $scope.boardType === "ARDUINO_YUN") {
+        /* set editor styling */
         $scope.ace.getSession().setMode("ace/mode/c_cpp");
+
+        /* add setup function */
         code += "void setup() {\n";
         code += "byte mac[] = {" + $scope.boardMAC.replace(/\./g, ',') + "};\n";
         code += "\tserver.begin(\""+ window.location.hostname + "\", mac, \"" +
                 $scope.token + "\");\n";
+
+        /* register all sensors */
         for (var sensor in $scope.codeSensors) {
           switch ($scope.codeSensors[sensor].sensorType) {
             case 'DIGITAL_OUTPUT':
@@ -197,12 +215,16 @@ angular.module('myApp',['ui.ace']).controller ('WyliodrinCtrl', function ($scope
               currentServo += 1;
               break;
             default:
-              // code
           }
         }
+
+        /* simple main loop */
         code += "\n}\n\nvoid loop() {\n\tserver.loop();\n\tdelay(1000);\n}"
       } else if ($scope.boardType === "OTHERS") {
+        /* set editor styling mode */
         $scope.ace.getSession().setMode("ace/mode/python");
+
+        /* add sensors */
         var currentServo = 0;
         for (var sensor in $scope.codeSensors) {
           switch ($scope.codeSensors[sensor].sensorType) {
@@ -224,11 +246,11 @@ angular.module('myApp',['ui.ace']).controller ('WyliodrinCtrl', function ($scope
               currentServo += 1;
               break;
             default:
-              // code
           }
         }
       }
       
+      /* update code in browser *(ace.text = code)* */
       $scope.boardCode = code;
     }
     

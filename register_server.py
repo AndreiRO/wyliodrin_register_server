@@ -22,13 +22,25 @@ GENERIC_OUTPUT  = "GENERIC_OUTPUT"
 GENERIC_INPUT   = "GENERIC_INPUT"
 
 
-"""
-    The base class for sensors. It is instanced by RegisterServer with
-    one instance per sensor. Each sensor will have a separate thread.
-"""
+
 class Sensor(object):
+    """
+        The base class for sensors. It is instanced by RegisterServer with
+        one instance per sensor. Each sensor will have a separate thread.
+    """
 
     def __init__(self, _id, _type, pin, sleep_time, value_range, function = None):
+        """
+            Constructor for a sensor.
+
+            Arguments:
+                _id         -> the sensor's name
+                type        -> the sensor's type (DIGITAL_INPUT, PWM_OUTPUT etc.)
+                pin         -> physical pin
+                sleep_time  -> sleep for sensor's thread
+                value_range -> the range for limiting server commmunication
+                function    -> pointer to a function, used only for generic sensors
+        """
         # the sensor name, eg. light_sensor, button1
         self._id = _id
        
@@ -62,11 +74,17 @@ class Sensor(object):
             pinMode(pin, OUTPUT)
 
 
-    """
-        Function called to get the value for a sensor.
-        Communicates with the server and waits for response.
-    """
+
     def get(self, url, token):
+        """
+            Function called to get the value for a sensor.
+            Communicates with the server and waits for response.
+
+            Arguments:
+                url   -> the host part of the url
+                       eg http://iot.wyliodrin.register-server.org/
+                token -> user's security token
+        """
         # create url
         url = url + ('/' if url[-1] != '/' else '') + 'get'
 
@@ -82,10 +100,16 @@ class Sensor(object):
                     obj = json.loads(res.content)
 
                     if obj["error"] != 0:
+                        # troubleshooting
                         print obj["reason"]
                     else:
                         self.value = obj["value"]
-                        print "Got value: ", self.value, " for sensor on pin: ", self.pin
+
+                        # log
+                        print "Got value: ",
+                              self.value,
+                              " for sensor on pin: ",
+                              self.pin
 
                         if self._type == DIGITAL_OUTPUT:
                             digitalWrite(self.pin, self.value)
@@ -101,13 +125,19 @@ class Sensor(object):
             time.sleep(self.sleep_time)
 
 
-    """
-        Function called to set the value for a sensor.
-        Communicates with the server and waits for the response.
-    """
+
     def send(self, url, token):
+        """
+            Function called to set the value for a sensor.
+            Communicates with the server and waits for the response.
+
+            Arguments:
+                url   -> the host part of the url
+                       eg http://iot.wyliodrin.register-server.org/
+                token -> user's security token
+        """
         # create url
-        url = url + ('/' if url[-1] != '/' else '') + 'get'
+        url = url + ('/' if url[-1] != '/' else '') + 'send'
 
         while True:
             try:
@@ -142,7 +172,10 @@ class Sensor(object):
                 if res.status_code != 200:
                     print "Error: " + res.reason
                 else:
-                    print "Sent value: ", self.value, " for sensor on pin: ", self.pin
+                    print "Sent value: ",
+                          self.value,
+                          " for sensor on pin: ",
+                          self.pin
 
             finally:
                 self.lock.release()
@@ -172,10 +205,12 @@ class RegisterServer(object):
 
     """
         Registers a digital input sensor and starts it.
-        _id -> the name of the sensor
-        pin -> the physical pin
-        sleep_time -> the pause between reads
-        value_range -> range to limit connection usage
+
+        Arguments:
+            _id         -> the name of the sensor
+            pin         -> the physical pin
+            sleep_time  -> the pause between reads
+            value_range -> range to limit connection usage
     """
     def registerDigitalInput(self, _id, pin, sleep_time, value_range):
 
@@ -195,13 +230,21 @@ class RegisterServer(object):
 
             # check for errors
             if res.status_code != 200:
-                print "Error regitstering DIGITAL_INPUT on pin: ", pin, " Reason: ", res.reason
+                print "Error regitstering DIGITAL_INPUT on pin: ",
+                      pin,
+                      " Reason: ",
+                      res.reason
+
                 return False
             
             # check for errors
             obj = json.loads(res.content)
             if obj["error"] != 0 and obj["error"] != 2:
-                print "Error regitstering DIGITAL_INPUT on pin: ", pin, " Reason: ", obj["reason"]
+                print "Error regitstering DIGITAL_INPUT on pin: ",
+                      pin,
+                      " Reason: ",
+                      obj["reason"]
+
                 return False
 
             # start it
@@ -211,10 +254,12 @@ class RegisterServer(object):
 
     """
         Registers a analog input sensor and starts it.
-        _id -> the name of the sensor
-        pin -> the physical pin
-        sleep_time -> the pause between reads
-        value_range -> range to limit connection usage
+
+        Arguments:
+            _id         -> the name of the sensor
+            pin         -> the physical pin
+            sleep_time  -> the pause between reads
+            value_range -> range to limit connection usage
     """
     def registerAnalogInput(self, _id, pin, sleep_time, value_range):
 
@@ -233,13 +278,20 @@ class RegisterServer(object):
 
             # check for errors
             if res.status_code != 200:
-                print "Error regitstering ANALOG_INPUT on pin: ", pin, " Reason: ", res.reason
+                print "Error regitstering ANALOG_INPUT on pin: ",
+                      pin,
+                      " Reason: ",
+                      res.reason
+
                 return False
             
             # check for errors
             obj = json.loads(res.content)
             if obj["error"] != 0 and obj["error"] != 2:
-                print "Error regitstering ANALOG_INPUT on pin: ", pin, " Reason: ", obj["reason"]
+                print "Error regitstering ANALOG_INPUT on pin: ",
+                      pin,
+                      " Reason: ",
+                      obj["reason"]
                 return False
 
 
@@ -250,10 +302,12 @@ class RegisterServer(object):
 
     """
         Registers a digital output sensor and starts it.
-        _id -> the name of the sensor
-        pin -> the physical pin
-        sleep_time -> the pause between reads
-        value_range -> range to limit connection usage
+
+        Arguments:
+            _id         -> the name of the sensor
+            pin         -> the physical pin
+            sleep_time  -> the pause between reads
+            value_range -> range to limit connection usage
     """
     def registerDigitalOutput(self, _id, pin, sleep_time, value_range):
 
@@ -272,13 +326,21 @@ class RegisterServer(object):
 
             # check for errors
             if res.status_code != 200:
-                print "Error regitstering DIGITAL_OUTPUT on pin: ", pin, " Reason: ", res.reason
+                print "Error regitstering DIGITAL_OUTPUT on pin: ",
+                      pin,
+                      " Reason: ",
+                      res.reason
+
                 return False
             
             # check for errors
             obj = json.loads(res.content)
             if obj["error"] != 0 and obj["error"] != 2:
-                print "Error regitstering DIGITAL_OUTPUT on pin: ", pin, " Reason: ", obj["reason"]
+                print "Error regitstering DIGITAL_OUTPUT on pin: ",
+                      pin,
+                      " Reason: ",
+                      obj["reason"]
+
                 return False
 
             # start it
@@ -287,10 +349,12 @@ class RegisterServer(object):
 
     """
         Registers a pwm output sensor and starts it.
-        _id -> the name of the sensor
-        pin -> the physical pin
-        sleep_time -> the pause between reads
-        value_range -> range to limit connection usage
+
+        Arguments:
+            _id         -> the name of the sensor
+            pin         -> the physical pin
+            sleep_time  -> the pause between reads
+            value_range -> range to limit connection usage
     """
     def registerPWMOutput(self, _id, pin, sleep_time, value_range):
 
@@ -325,11 +389,13 @@ class RegisterServer(object):
 
     """
         Registers a generic output sensor and starts it.
-        _id -> the name of the sensor
-        pin -> the physical pin
-        sleep_time -> the pause between reads
-        value_range -> range to limit connection usage
-        function -> pointer to function
+
+        Arguments:
+            _id         -> the name of the sensor
+            pin         -> the physical pin
+            sleep_time  -> the pause between reads
+            value_range -> range to limit connection usage
+            function    -> pointer to function
     """
     def registerGenericOutput(self, _id, pin, sleep_time, value_range, function):
 
@@ -348,13 +414,21 @@ class RegisterServer(object):
 
             # check for errors
             if res.status_code != 200:
-                print "Error regitstering GENERIC_OUTPUT on pin: ", pin, " Reason: ", res.reason
+                print "Error regitstering GENERIC_OUTPUT on pin: ",
+                      pin,
+                      " Reason: ",
+                      res.reason
+
                 return False
             
             # check for errors
             obj = json.loads(res.content)
             if obj["error"] != 0 and obj["error"] != 2:
-                print "Error regitstering GENERIC_OUTPUT on pin: ", pin, " Reason: ", obj["reason"]
+                print "Error regitstering GENERIC_OUTPUT on pin: ",
+                      pin,
+                      " Reason: ",
+                      obj["reason"]
+
                 return False
 
             # start it
@@ -364,11 +438,13 @@ class RegisterServer(object):
 
     """
         Registers a generic input sensor and starts it.
-        _id -> the name of the sensor
-        pin -> the physical pin
-        sleep_time -> the pause between reads
-        value_range -> range to limit connection usage
-        function -> pointer to function
+
+        Arguments:
+            _id -> the name of the sensor
+            pin -> the physical pin
+            sleep_time -> the pause between reads
+            value_range -> range to limit connection usage
+            function -> pointer to function
     """
     def registerGenericInput(self, _id, pin, sleep_time, value_range, function):
 
@@ -387,13 +463,21 @@ class RegisterServer(object):
 
             # check for errors
             if res.status_code != 200:
-                print "Error regitstering GENERIC_INPUT on pin: ", pin, " Reason: ", res.reason
+                print "Error regitstering GENERIC_INPUT on pin: ",
+                      pin,
+                      " Reason: ",
+                      res.reason
+
                 return False
             
             # check for errors
             obj = json.loads(res.content)
             if obj["error"] != 0 and obj["error"] != 2:
-                print "Error regitstering GENERIC_INPUT on pin: ", pin, " Reason: ", obj["reason"]
+                print "Error regitstering GENERIC_INPUT on pin: ",
+                      pin,
+                      " Reason: ",
+                      obj["reason"]
+                      
                 return False
 
             # start it
