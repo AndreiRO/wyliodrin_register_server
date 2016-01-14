@@ -212,7 +212,7 @@ class RegisterServer(object):
             sleep_time  -> the pause between reads
             value_range -> range to limit connection usage
     """
-    def registerDigitalInput(self, _id, pin, sleep_time, value_range):
+    def registerDigitalInput(self, _id, pin, sleep_time):
 
         if _id in self.sensors or not validate_pin(pin):
             # cannot add it
@@ -220,7 +220,7 @@ class RegisterServer(object):
             return False
         else:
             # create sensor
-            s = Sensor(_id, DIGITAL_INPUT, pin, sleep_time, value_range)
+            s = Sensor(_id, DIGITAL_INPUT, pin, sleep_time, 0)
             self.sensors[_id] = {"object" : s, "autosend" : sleep_time}
     
             # try to register it
@@ -309,7 +309,7 @@ class RegisterServer(object):
             sleep_time  -> the pause between reads
             value_range -> range to limit connection usage
     """
-    def registerDigitalOutput(self, _id, pin, sleep_time, value_range):
+    def registerDigitalOutput(self, _id, pin, sleep_time):
 
         if _id in self.sensors or not validate_pin(pin):
             # cannot add it
@@ -317,7 +317,7 @@ class RegisterServer(object):
             return False
         else:
             # create it
-            s = Sensor(_id, DIGITAL_OUTPUT, pin, sleep_time, value_range)
+            s = Sensor(_id, DIGITAL_OUTPUT, pin, sleep_time, 0)
             self.sensors[_id] = {"object" : s, "autosend" : sleep_time}
 
             url = self.url + ("/" if self.url[-1] != "/" else "") + "/register"
@@ -356,7 +356,7 @@ class RegisterServer(object):
             sleep_time  -> the pause between reads
             value_range -> range to limit connection usage
     """
-    def registerPWMOutput(self, _id, pin, sleep_time, value_range):
+    def registerPWMOutput(self, _id, pin, sleep_time):
 
         if _id in self.sensors or not validate_pin(pin):
             # cannot add it
@@ -364,7 +364,7 @@ class RegisterServer(object):
             return False
         else:
             # create it
-            s = Sensor(_id, PWM_OUTPUT, pin, sleep_time, value_range)
+            s = Sensor(_id, PWM_OUTPUT, pin, sleep_time, 0)
             self.sensors[_id] = {"object" : s, "autosend" : sleep_time}
 
             url = self.url + ("/" if self.url[-1] != "/" else "") + "/register"

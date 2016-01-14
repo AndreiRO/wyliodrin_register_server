@@ -137,9 +137,8 @@ public:
    * Registers a Digital input
    * @param id the name of the sensor
    * @param pin the physical pin
-   * @param range the values' range before sending a new request
    */
-  bool registerDigitalInput(String id, int pin, int range);
+  bool registerDigitalInput(String id, int pin);
 
   /**
    * Registers a Analog input

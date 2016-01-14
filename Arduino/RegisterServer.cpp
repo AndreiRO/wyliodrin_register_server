@@ -185,7 +185,7 @@ bool RegisterServer::registerGenericOutput(String id,
 }
   
 
-bool RegisterServer::registerDigitalInput(String id, int pin, int range) {
+bool RegisterServer::registerDigitalInput(String id, int pin) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
@@ -194,7 +194,7 @@ bool RegisterServer::registerDigitalInput(String id, int pin, int range) {
     pinMode(pin, INPUT);
    
     /* create it */ 
-    Sensor s(id, DIGITAL_INPUT, pin, range);
+    Sensor s(id, DIGITAL_INPUT, pin, 0);
     sensors[nrSensors] = s;
     nrSensors += 1;
    

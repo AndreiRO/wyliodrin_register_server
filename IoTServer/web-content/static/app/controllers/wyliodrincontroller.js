@@ -201,7 +201,7 @@ angular.module('myApp',['ui.ace']).controller ('WyliodrinCtrl', function ($scope
               code += "\tserver.registerDigitalOutput(\"" + sensor + "\", " + $scope.codeSensors[sensor].sensorPin + ");\n";
               break;
             case 'DIGITAL_INPUT':
-              code += "\tserver.registerDigitalInput(\"" + sensor + "\", " + $scope.codeSensors[sensor].sensorPin + ", 10);\n";
+              code += "\tserver.registerDigitalInput(\"" + sensor + "\", " + $scope.codeSensors[sensor].sensorPin + ");\n";
               break;
             case 'ANALOG_OUTPUT':
               code += "\tserver.registerAnalogOutput(\"" + sensor + "\", " + $scope.codeSensors[sensor].sensorPin + ");\n";
@@ -229,13 +229,13 @@ angular.module('myApp',['ui.ace']).controller ('WyliodrinCtrl', function ($scope
         for (var sensor in $scope.codeSensors) {
           switch ($scope.codeSensors[sensor].sensorType) {
             case 'DIGITAL_OUTPUT':
-              code += "server.registerDigitalOutput(\"" + sensor + "\", " + $scope.codeSensors[sensor].sensorPin + ", 150, 10);\n";
+              code += "server.registerDigitalOutput(\"" + sensor + "\", " + $scope.codeSensors[sensor].sensorPin + ", 150);\n";
               break;
             case 'DIGITAL_INPUT':
-              code += "server.registerDigitalInput(\"" + sensor + "\", " + $scope.codeSensors[sensor].sensorPin + ", 150, 10);\n";
+              code += "server.registerDigitalInput(\"" + sensor + "\", " + $scope.codeSensors[sensor].sensorPin + ", 150);\n";
             break;
             case 'ANALOG_OUTPUT':
-              code += "server.registerAnalogOutput(\"" + sensor + "\", " + $scope.codeSensors[sensor].sensorPin + ", 150, 10);\n";
+              code += "server.registerAnalogOutput(\"" + sensor + "\", " + $scope.codeSensors[sensor].sensorPin + ", 150);\n";
             break;
             case 'ANALOG_INPUT':
               code += "server.registerAnalogInput(\"" + sensor + "\", " + $scope.codeSensors[sensor].sensorPin + ", 150, 10);\n";
