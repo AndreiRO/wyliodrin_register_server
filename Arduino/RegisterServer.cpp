@@ -3,29 +3,9 @@
  * Wyliodrin SRL
  * 
  */
+#include "RegisterServer.h"
 
-#include <ctype.h>
-#define ARDUINO_UNO_
 
-/* select what to import */
-
-#if defined(ARDUINO_YUN_)
-  #include <Bridge.h>
-  #include <HttpClient.h>
-#elif defined(ARDUINO_UNO_)
-  #include <SPI.h>
-  #include <string.h>
-  #include <Ethernet.h>
-  #include <EthernetClient.h>
-#endif
-
-/**
- * Function that sends a request and reads the result
- * @param  host the url for the IoT server
- * @param  path the endpoint eg /register, /send, /get
- * @param  data the body of the request
- * @return String containing the result
- */
 String sendRequest(const char* host, const char* path, const char* data) {
   EthernetClient client;
 
@@ -78,64 +58,32 @@ String sendRequest(const char* host, const char* path, const char* data) {
   return value;
 }
 
-/* current sensor types */
-enum sensor_type {
-  DIGITAL_INPUT,
-  DIGITAL_OUTPUT,
-  PWM_OUTPUT,
-  ANALOG_INPUT,
-  GENERIC_INPUT,      /* used for sensors with a function as a parameter*/
-  GENERIC_OUTPUT,     /* used for sensors with a function as a parameter*/
-  UNDEFINED           /* NULL type like */
-};
-
-/**
- * Sensor implementation. Contains reference to the sensor:
- * : name           -> the so called id in http requests
- * : physical pin   -> the pin on the arduino board
- * : current value  -> its value
- * : sensor type    -> sensor_type enum value
- * : sensor range   -> used to limit sending data if value read is in range
- */
-class Sensor {
-
-public:
-
-  /* default constructor, not to be used */
-  Sensor() {
+Sensor::Sensor() {
     this->id = String("invalid");
     this->pin = -1;
     this->value = 0;
     this->type  = UNDEFINED;
     this->range = 0;
-  }
+}
   
-  /**
-   * Constructor
-   * @param id sensor name
-   * @param type the sensor's type
-   * @pin physical pin
-   * @param range the value range
-   */
-  Sensor(const String& id, sensor_type type, int pin, int range) {
+Sensor::Sensor(const String& id, sensor_type type, int pin, int range) {
     this->id = id;
     this->pin = pin;
     this->value = 0;
     this->type = type;
     this->range = range;
-  }
+}
 
-  /* copy constructor */
-  Sensor(const Sensor& s) {
+Sensor::Sensor(const Sensor& s) {
     this->id = s.id;
     this->pin = s.pin;
     this->value = s.value;
     this->type = s.type;
     this->range = s.range;
-  }
+}
 
-  /* overriding = operator */
-  Sensor& operator=(const Sensor& s) {
+
+Sensor& Sensor::operator=(const Sensor& s) {
     this->id = s.id;
     this->pin = s.pin;
     this->value = s.value;
@@ -143,39 +91,18 @@ public:
     this->range = s.range;
 
     return *(this);
-  }
+}
 
-  float value;      /* current value */
-  int pin;          /* physical pin */
-  int range;        /* value range */
-  String id;        /* sensor name */
-  sensor_type type; /* sensor type */
-};
 
-/**
- * RegisterServer class. Registers each sensor and handles them.
- *
- * It contains a setup function and a loop function to be used
- * Arduino-like style. Also led 13 is used to notify current state.
- * When it is ON, it means the board is communicating with the server.
- * 
- */
-class RegisterServer {
-
-public:
-
-  /* constructor */
-  RegisterServer() {
+Register::RegisterServer() {
     nrSensors = 0;
+#ifdef NETWORKING_STATUS
     pinMode(13, OUTPUT);
-  }
+#endif
+}
 
-  /** Initial setup
-   * @param serverAddres IoT server url
-   * @param mac 4 bytes representing the MAC address
-   * @param token security token
-   */
-  int begin(String serverAddress, byte mac[4], String token) {
+
+int RegisterServer::begin(String serverAddress, byte mac[4], String token) {
 
     #if defined(ARDUINO_YUN_)
       Bridge.begin();  /* for internet */
@@ -197,23 +124,15 @@ public:
     this->nrSensors = 0;
 
     return 0;
-  }
+}
 
-  /**
-   * Registers a Generic input
-   * 
-   * @param id the name of the sensor
-   * @param pin the physical pin
-   * @param range the values' range before sending a new request
-   * @param func pointer to a function
-   */
-  bool registerGenericInput(String id,
-                            int pin,
-                            int range,
-                            float (*func)(float)) {
+bool RegisterServer::registerGenericInput(String id,
+                                          int pin,
+                                          int range,
+                                          float (*func)(float)) {
     if (nrSensors == MAX_SIZE) {
       return false;
-    }
+}
     
     /* create sensor and add it */
     Sensor s(id, GENERIC_INPUT, pin, range);
@@ -233,20 +152,13 @@ public:
     #endif
  
     return true;
-  }
+}
 
-  /**
-   * Registers a Generic output
-   * 
-   * @param id the name of the sensor
-   * @param pin the physical pin
-   * @param range the values' range before sending a new request
-   * @param func pointer to a function
-   */
-  bool registerGenericOutput(String id,
-                             int pin,
-                             int range,
-                             float (*func)(float)) {
+
+bool RegisterServer::registerGenericOutput(String id,
+                                           int pin,
+                                           int range,
+                                           float (*func)(float)) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
@@ -270,15 +182,10 @@ public:
     func(0);
 
     return true;
-  }
+}
   
-  /**
-   * Registers a Digital input
-   * @param id the name of the sensor
-   * @param pin the physical pin
-   * @param range the values' range before sending a new request
-   */
-  bool registerDigitalInput(String id, int pin, int range) {
+
+bool RegisterServer::registerDigitalInput(String id, int pin, int range) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
@@ -303,15 +210,9 @@ public:
     #endif
 
     return true;
-  }
+}
 
-  /**
-   * Registers a Analog input
-   * @param id the name of the sensor
-   * @param pin the physical pin
-   * @param range the values' range before sending a new request
-   */
-  bool registerAnalogInput(String id, int pin, int range) {
+bool registerAnalogInput(String id, int pin, int range) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
@@ -334,15 +235,10 @@ public:
     #endif
 
     return true;
-  }
+}
 
-  /**
-   * Registers a Digital output
-   * @param id the name of the sensor
-   * @param pin the physical pin
-   * @param range the values' range before sending a new request
-   */
-  bool registerDigitalOutput(String id, int pin) {
+
+bool RegisterServer::registerDigitalOutput(String id, int pin) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
@@ -367,15 +263,10 @@ public:
     digitalWrite(pin, 0);
 
     return true;
-  }
+}
 
-   /**
-   * Registers a PWM output
-   * @param id the name of the sensor
-   * @param pin the physical pin
-   * @param range the values' range before sending a new request
-   */
-  bool registerPWMOutput(String id, int pin) {
+
+bool RegisterServer::registerPWMOutput(String id, int pin) {
     if (nrSensors == MAX_SIZE) {
       return false;
     }
@@ -399,23 +290,15 @@ public:
     
 
     return true;
-  }
+}
 
-  /* main loop */
-  /**
-   * Main loop
-   *
-   * Takes each sensor and initiates communication to server if needed.
-   * Reads values for input sensors and outputs values for output sensors.
-   *
-   * WARNING: LED 13 is used to show that the board is communicating with the server.
-   * 
-   */
-  void loop() {
+
+void RegisterServer::loop() {
 
     /* communicating with the server notification */
-    digitalWrite(13, HIGH);
-
+#ifdef NETWORKING_STATUS
+    digitalWrite(NETWORKING_PIN, HIGH);
+#endif
     /* iterate over sensors and update them */
     for (int i = 0; i < nrSensors; ++ i) {
       if (sensors[i].type == DIGITAL_INPUT ||
@@ -500,11 +383,13 @@ public:
     }
 
     /* no more communicating with the server */
-    digitalWrite(13, LOW);
-  }
+#ifdef NETWORKING_STATUS
+    digitalWrite(NETWORKING_PIN, LOW);
+#endif
+}
 
-  /* used for debug/log only */
-  void printStatus() {
+
+void RegisterServer::printStatus() {
     #if defined(ARDUINO_YUN_)
       Console.print("-------------------------\n");
       Console.flush();
@@ -526,13 +411,4 @@ public:
 
       Serial.print("-------------------------\n");
     #endif
-  }
-
-private:
-
-  String token;                         /* security token */
-  Sensor sensors[MAX_SIZE];             /* array of sensors */
-  float (*functions[MAX_SIZE])(float);  /* array of generic functions */
-  String url;                           /* url of IoT server */
-  int nrSensors;                        /* current number of sensors */
-};
+}

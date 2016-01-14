@@ -2,7 +2,7 @@
  * @api {post} /get
  * @apiGroup Retrieve
  * @apiName Retrieve sensor value
- * @apiDescription Retrieve a sensor value. All parameters are put in a JSON Document or post form.
+ * @apiDescription Retrieve a sensor value. All parameters are put in a JSON Document or application/x-www-form-urlencoded.
  *
  * 
  * @apiParam {String} id The name of the sensor.
@@ -25,7 +25,7 @@ function get() {}
  * @api {post} /send
  * @apiName Send sensor value
  * @apiGroup Send
- * @apiDescription Send a sensor value, all parameters are put in a JSON Document.
+ * @apiDescription Send a sensor value. All parameters are put in a JSON Document or application/x-www-form-urlencoded.
  *
  * 
  * @apiParam {String} id The name of the sensor.
@@ -48,7 +48,7 @@ function send() {}
   * @api {post} /register
   * @apiGroup Register
   * @apiName Register Sensor
-  * @apiDescription Register a new sensor. All parameters are put in a JSON document, multiple calls on same name simply override.
+  * @apiDescription Register a new sensor. All parameters are put in a JSON Document or application/x-www-form-urlencoded. Multiple calls with same id override.
   *
   *
   * @apiParam {String} id The name of the sensor.
@@ -70,7 +70,7 @@ function register() {}
  * @api {post} /code
  * @apiName Change log
  * @apiGroup Code
- * @apiDescription Send the new logic code that comes from Google Blockly.
+ * @apiDescription Send the new logic code that comes from Google Blockly. All parameters are put in a JSON Document or application/x-www-form-urlencoded.
  *
  * @apiParam {String} token User's security token.
  * @apiParam {String} code The new Javascript code.
